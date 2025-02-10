@@ -1,0 +1,7 @@
+[package]
+name = "r_path_finder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+piston_window = "0.132.0"
