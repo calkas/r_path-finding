@@ -1,9 +1,11 @@
 extern crate piston_window;
 
+mod algorithm;
 mod map;
 
 use crate::map::grid::Grid;
 
+use algorithm::bfs::bfs_find_goal;
 use piston_window::{types::Color, *};
 
 fn main() {
@@ -13,8 +15,8 @@ fn main() {
 
     let mut grid = Grid::new(0, 0, 400, 400, 20);
     let mut left_clicked_times = 0;
-
     let mut mouse_pos = [0.0, 0.0];
+
     while let Some(e) = window.next() {
         if let Some(pos) = e.mouse_cursor_args() {
             mouse_pos = pos;
@@ -29,6 +31,7 @@ fn main() {
                     } else if left_clicked_times == 1 {
                         grid.on_mouse_clicked(&mouse_pos, map::grid::Title::End);
                     } else {
+                        bfs_find_goal(&mut grid);
                     }
                     left_clicked_times = left_clicked_times + 1;
                 }
@@ -44,23 +47,3 @@ fn main() {
         });
     }
 }
-
-// fn main() {
-//     let mut grid = Grid::new(200, 200, 20);
-//     let mut window: PistonWindow = WindowSettings::new("Hello Piston!", [640, 480])
-//         .exit_on_esc(true)
-//         .build()
-//         .unwrap();
-
-//     while let Some(e) = window.next() {
-//         window.draw_2d(&e, |c, g, _device| {
-//             clear([1.0; 4], g);
-//             rectangle(
-//                 [1.0, 0.0, 0.0, 1.0], // red
-//                 [0.0, 0.0, 100.0, 100.0],
-//                 c.transform,
-//                 g,
-//             );
-//         });
-//     }
-// }
