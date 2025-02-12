@@ -5,7 +5,7 @@ mod map;
 
 use crate::map::grid::Grid;
 
-use algorithm::bfs::bfs_find_goal;
+use algorithm::bfs::Bfs;
 use piston_window::{types::Color, *};
 
 fn main() {
@@ -13,6 +13,7 @@ fn main() {
         .build()
         .unwrap();
 
+    let mut bfs = Bfs::default();
     let mut grid = Grid::new(0, 0, 400, 400, 20);
     let mut left_clicked_times = 0;
     let mut mouse_pos = [0.0, 0.0];
@@ -30,8 +31,9 @@ fn main() {
                         grid.on_mouse_clicked(&mouse_pos, map::grid::Title::Start);
                     } else if left_clicked_times == 1 {
                         grid.on_mouse_clicked(&mouse_pos, map::grid::Title::End);
+                    } else if left_clicked_times == 2 {
+                        bfs.start(&mut grid);
                     } else {
-                        bfs_find_goal(&mut grid);
                     }
                     left_clicked_times = left_clicked_times + 1;
                 }
@@ -41,6 +43,11 @@ fn main() {
                 _ => (),
             }
         }
+
+        e.update(|args| {
+            bfs.update(&mut grid, args.dt);
+        });
+
         window.draw_2d(&e, |c, g, _| {
             clear([0.5, 0.5, 0.5, 1.0], g);
             grid.render(&c, g);

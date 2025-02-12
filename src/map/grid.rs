@@ -2,6 +2,11 @@ use piston_window::rectangle;
 use piston_window::types::Color;
 use piston_window::Context;
 use piston_window::G2d;
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct TitleCoords {
+    pub x: usize,
+    pub y: usize,
+}
 
 #[derive(PartialEq, Debug)]
 pub enum Title {
@@ -18,8 +23,8 @@ pub struct Grid {
     title_size: u32,
     offset: (u32, u32),
     titles: Vec<Vec<Title>>,
-    pub start: Option<(usize, usize)>,
-    pub end: Option<(usize, usize)>,
+    pub start: Option<TitleCoords>,
+    pub end: Option<TitleCoords>,
 }
 
 impl Grid {
@@ -59,11 +64,11 @@ impl Grid {
             let y = ((mouse_positon[1] - self.offset.1 as f64) / self.title_size as f64) as usize;
 
             if title == Title::Start {
-                self.start = Some((x, y));
+                self.start = Some(TitleCoords { x, y });
             }
 
             if title == Title::End {
-                self.end = Some((x, y));
+                self.end = Some(TitleCoords { x, y });
             }
 
             self.titles[x][y] = title;
@@ -139,9 +144,9 @@ mod unit_test {
         grid.on_mouse_clicked(&[41.4, 20.3], Title::Obstacle);
 
         assert_eq!(Title::Start, grid.titles[1][1]);
-        assert_eq!(grid.start, Some((1, 1)));
+        assert_eq!(grid.start, Some(TitleCoords { x: 1, y: 1 }));
         assert_eq!(Title::End, grid.titles[2][3]);
-        assert_eq!(grid.end, Some((2, 3)));
+        assert_eq!(grid.end, Some(TitleCoords { x: 2, y: 3 }));
         assert_eq!(Title::Obstacle, grid.titles[4][2]);
     }
 }
