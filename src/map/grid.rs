@@ -1,7 +1,6 @@
-use piston_window::rectangle;
 use piston_window::types::Color;
-use piston_window::Context;
-use piston_window::G2d;
+use piston_window::{rectangle, Context, G2d};
+
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct TitleCoords {
     pub x: usize,
@@ -23,8 +22,8 @@ pub struct Grid {
     title_size: u32,
     offset: (u32, u32),
     titles: Vec<Vec<Title>>,
-    pub start: Option<TitleCoords>,
-    pub end: Option<TitleCoords>,
+    pub start_title: Option<TitleCoords>,
+    pub goal_title: Option<TitleCoords>,
 }
 
 impl Grid {
@@ -49,8 +48,8 @@ impl Grid {
             title_size,
             offset,
             titles,
-            start: None,
-            end: None,
+            start_title: None,
+            goal_title: None,
         }
     }
 
@@ -64,33 +63,41 @@ impl Grid {
             let y = ((mouse_positon[1] - self.offset.1 as f64) / self.title_size as f64) as usize;
 
             if title == Title::Start {
-                self.start = Some(TitleCoords { x, y });
+                self.start_title = Some(TitleCoords { x, y });
             }
 
             if title == Title::End {
-                self.end = Some(TitleCoords { x, y });
+                self.goal_title = Some(TitleCoords { x, y });
             }
 
             self.titles[x][y] = title;
         }
     }
 
-    pub fn mark_visited(&mut self, x: usize, y: usize) {
-        if x as u32 >= self.columns || y as u32 >= self.rows {
+    pub fn is_within_bounds(&self, title_coords: TitleCoords) -> bool {
+        (title_coords.x as u32) < self.columns && (title_coords.y as u32) < self.rows
+    }
+
+    pub fn mark_visited(&mut self, title_coords: TitleCoords) {
+        if !self.is_within_bounds(title_coords) {
             return;
         }
 
-        if self.titles[x][y] == Title::Start || self.titles[x][y] == Title::End {
+        if self.titles[title_coords.x][title_coords.y] == Title::Start
+            || self.titles[title_coords.x][title_coords.y] == Title::End
+        {
             return;
         }
-        self.titles[x][y] = Title::Normal { was_visited: true };
+        self.titles[title_coords.x][title_coords.y] = Title::Normal { was_visited: true };
     }
 
-    pub fn set_trace_back_path(&mut self, x: usize, y: usize) {
-        self.titles[x][y] = Title::Path;
+    pub fn set_trace_back_path(&mut self, title_coords: TitleCoords) {
+        if self.is_within_bounds(title_coords) {
+            self.titles[title_coords.x][title_coords.y] = Title::Path;
+        }
     }
-    pub fn is_obstacle(&self, x: usize, y: usize) -> bool {
-        self.titles[x][y] == Title::Obstacle
+    pub fn is_obstacle(&self, title_coords: TitleCoords) -> bool {
+        self.titles[title_coords.x][title_coords.y] == Title::Obstacle
     }
 
     fn get_color_for_title(&self, title: &Title) -> Color {
@@ -136,7 +143,7 @@ mod unit_test {
 
         assert_eq!(25 as usize, number_of_titles);
 
-        grid.mark_visited(3, 3);
+        grid.mark_visited(TitleCoords { x: 3, y: 3 });
         assert_eq!(Title::Normal { was_visited: true }, grid.titles[3][3]);
 
         grid.on_mouse_clicked(&[15.0, 15.3], Title::Start);
@@ -144,9 +151,9 @@ mod unit_test {
         grid.on_mouse_clicked(&[41.4, 20.3], Title::Obstacle);
 
         assert_eq!(Title::Start, grid.titles[1][1]);
-        assert_eq!(grid.start, Some(TitleCoords { x: 1, y: 1 }));
+        assert_eq!(grid.start_title, Some(TitleCoords { x: 1, y: 1 }));
         assert_eq!(Title::End, grid.titles[2][3]);
-        assert_eq!(grid.end, Some(TitleCoords { x: 2, y: 3 }));
+        assert_eq!(grid.goal_title, Some(TitleCoords { x: 2, y: 3 }));
         assert_eq!(Title::Obstacle, grid.titles[4][2]);
     }
 }

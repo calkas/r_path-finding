@@ -6,7 +6,7 @@ mod map;
 use crate::map::grid::Grid;
 
 use algorithm::bfs::Bfs;
-use piston_window::{types::Color, *};
+use piston_window::*;
 
 fn main() {
     let mut window: PistonWindow = WindowSettings::new("Path Finding", [640.0, 480.0])
@@ -33,7 +33,6 @@ fn main() {
                         grid.on_mouse_clicked(&mouse_pos, map::grid::Title::End);
                     } else if left_clicked_times == 2 {
                         bfs.start(&mut grid);
-                    } else {
                     }
                     left_clicked_times = left_clicked_times + 1;
                 }
