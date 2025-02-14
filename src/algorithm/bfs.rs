@@ -2,8 +2,15 @@ use crate::map::grid::{Grid, TitleCoords};
 use std::collections::{HashMap, VecDeque};
 
 const ONE_ITERATION_TIME_SEC: f64 = 0.3;
+
+/// FYI the coordinate system is
+/// (0,0)----> x
+/// |
+/// |
+/// V y
 const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
 
+/// # Breadth-First Search Algorithm
 pub struct Bfs {
     queue_of_titles: VecDeque<TitleCoords>,
     visited_titles: Vec<TitleCoords>,
@@ -38,9 +45,20 @@ impl Bfs {
     }
 
     fn display_statistics(&self) {
-        println!(" * Path len {}", self.path.len());
-        println!(" * Done in {} steps", self.steps);
-        println!("FINISH");
+        println!("- Finish");
+        println!("- Statistics:");
+        println!(" * Path length: {}", self.path.len());
+        println!(" * Steps taken: {}", self.steps);
+        println!(" * Visited nodes: {}", self.visited_titles.len());
+        println!(
+            " * Time per iteration: {:.2} seconds",
+            ONE_ITERATION_TIME_SEC
+        );
+        println!(
+            " * Total time: {:.2} seconds",
+            self.steps as f64 * ONE_ITERATION_TIME_SEC
+        );
+        println!("- Done");
     }
 
     fn should_iterate(&mut self, delta_time: f64) -> bool {
@@ -56,24 +74,28 @@ impl Bfs {
         let mut current_title = grid.goal_title;
         while let Some(coord) = current_title {
             self.path.push(coord);
+            grid.set_trace_back_path(coord);
             current_title = *self
                 .title_path_mapping
                 .get(&current_title)
                 .expect("Title coord does not exist");
         }
-
-        for element in self.path.iter() {
-            grid.set_trace_back_path(*element);
-        }
     }
 
+    fn handle_goal_reached(&mut self, grid: &mut Grid) {
+        self.build_solution_path(grid);
+        self.display_statistics();
+    }
+
+    /// # start
+    /// BFS Algorithm starts.
     pub fn start(&mut self, grid: &mut Grid) {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             println!("User did not set the start or end point");
             return;
         }
         println!("..::BFS Algorithm:...");
-        println!("Starts...");
+        println!("- Starts");
         self.queue_of_titles.push_back(grid.start_title.unwrap());
         self.visited_titles.push(grid.start_title.unwrap());
         self.title_path_mapping
@@ -81,6 +103,8 @@ impl Bfs {
         self.is_processing = true;
     }
 
+    /// # update
+    /// Algorithm processing update every ONE_ITERATION_TIME_SEC until reach the goal
     pub fn update(&mut self, grid: &mut Grid, delta_time: f64) {
         if !self.is_processing || !self.should_iterate(delta_time) {
             return;
@@ -90,8 +114,7 @@ impl Bfs {
             self.steps += 1;
 
             if self.is_goal_reached(current_title, grid.goal_title.unwrap()) {
-                self.build_solution_path(grid);
-                self.display_statistics();
+                self.handle_goal_reached(grid);
                 return;
             }
 
@@ -117,9 +140,8 @@ impl Bfs {
                     self.title_path_mapping
                         .insert(Some(next_title), Some(current_title));
 
-                    if self.is_goal_reached(next_title, grid.goal_title.unwrap()) {
-                        self.build_solution_path(grid);
-                        self.display_statistics();
+                    if self.is_goal_reached(current_title, grid.goal_title.unwrap()) {
+                        self.handle_goal_reached(grid);
                         return;
                     }
                     self.queue_of_titles.push_back(next_title);

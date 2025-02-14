@@ -21,7 +21,6 @@ fn main() {
     while let Some(e) = window.next() {
         if let Some(pos) = e.mouse_cursor_args() {
             mouse_pos = pos;
-            //println!("mouse pos = {:?}", mouse_pos);
         }
 
         if let Some(Button::Mouse(button)) = e.press_args() {
