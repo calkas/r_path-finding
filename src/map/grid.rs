@@ -1,7 +1,8 @@
 use piston_window::types::Color;
 use piston_window::{rectangle, Context, G2d};
+use std::hash::Hash;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct TitleCoords {
     pub x: usize,
     pub y: usize,
@@ -97,6 +98,9 @@ impl Grid {
         }
     }
     pub fn is_obstacle(&self, title_coords: TitleCoords) -> bool {
+        if !self.is_within_bounds(title_coords) {
+            return true;
+        }
         self.titles[title_coords.x][title_coords.y] == Title::Obstacle
     }
 

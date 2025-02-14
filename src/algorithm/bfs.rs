@@ -2,10 +2,13 @@ use crate::map::grid::{Grid, TitleCoords};
 use std::collections::{HashMap, VecDeque};
 
 const ONE_ITERATION_TIME_SEC: f64 = 0.3;
+const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
 
 pub struct Bfs {
     queue_of_titles: VecDeque<TitleCoords>,
     visited_titles: Vec<TitleCoords>,
+    path: Vec<TitleCoords>,
+    title_path_mapping: HashMap<Option<TitleCoords>, Option<TitleCoords>>,
     is_processing: bool,
     steps: u32,
     accumulated_time: f64,
@@ -14,8 +17,10 @@ pub struct Bfs {
 impl Default for Bfs {
     fn default() -> Self {
         Self {
-            queue_of_titles: Default::default(),
-            visited_titles: Default::default(),
+            queue_of_titles: VecDeque::default(),
+            visited_titles: Vec::default(),
+            path: Vec::default(),
+            title_path_mapping: HashMap::default(),
             is_processing: false,
             steps: 0,
             accumulated_time: 0.0,
@@ -28,9 +33,14 @@ impl Bfs {
         if current_title != goal_title {
             return false;
         }
-        println!("Done in {} steps", self.steps);
         self.is_processing = false;
         true
+    }
+
+    fn display_statistics(&self) {
+        println!(" * Path len {}", self.path.len());
+        println!(" * Done in {} steps", self.steps);
+        println!("FINISH");
     }
 
     fn should_iterate(&mut self, delta_time: f64) -> bool {
@@ -42,13 +52,32 @@ impl Bfs {
         true
     }
 
+    fn build_solution_path(&mut self, grid: &mut Grid) {
+        let mut current_title = grid.goal_title;
+        while let Some(coord) = current_title {
+            self.path.push(coord);
+            current_title = *self
+                .title_path_mapping
+                .get(&current_title)
+                .expect("Title coord does not exist");
+        }
+
+        for element in self.path.iter() {
+            grid.set_trace_back_path(*element);
+        }
+    }
+
     pub fn start(&mut self, grid: &mut Grid) {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             println!("User did not set the start or end point");
             return;
         }
-        println!("BFS Algorithm starts..");
+        println!("..::BFS Algorithm:...");
+        println!("Starts...");
         self.queue_of_titles.push_back(grid.start_title.unwrap());
+        self.visited_titles.push(grid.start_title.unwrap());
+        self.title_path_mapping
+            .insert(Some(grid.start_title.unwrap()), None);
         self.is_processing = true;
     }
 
@@ -58,95 +87,46 @@ impl Bfs {
         }
 
         if let Some(current_title) = self.queue_of_titles.pop_front() {
-            let possible_directions: [(i32, i32); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
-            self.steps = self.steps + 1;
+            self.steps += 1;
 
-            for direction in possible_directions.iter() {
-                let possible_title = (
-                    current_title.x as i32 + direction.0,
-                    current_title.y as i32 + direction.1,
-                );
+            if self.is_goal_reached(current_title, grid.goal_title.unwrap()) {
+                self.build_solution_path(grid);
+                self.display_statistics();
+                return;
+            }
 
-                if possible_title.0 < 0
-                    || possible_title.0 >= grid.columns as i32
-                    || possible_title.1 < 0
-                    || possible_title.1 >= grid.rows as i32
-                {
+            for direction in POSSIBLE_DIRECTIONS.iter() {
+                let coord_x = current_title.x.checked_add_signed(direction.0);
+                let coord_y = current_title.y.checked_add_signed(direction.1);
+
+                if coord_x.is_none() || coord_y.is_none() {
                     continue;
                 }
 
                 let next_title = TitleCoords {
-                    x: possible_title.0 as usize,
-                    y: possible_title.1 as usize,
+                    x: coord_x.unwrap(),
+                    y: coord_y.unwrap(),
                 };
 
-                if !self.visited_titles.contains(&next_title) && !grid.is_obstacle(next_title) {
+                if !self.visited_titles.contains(&next_title)
+                    && grid.is_within_bounds(next_title)
+                    && !grid.is_obstacle(next_title)
+                {
                     grid.mark_visited(next_title);
                     self.visited_titles.push(next_title);
+                    self.title_path_mapping
+                        .insert(Some(next_title), Some(current_title));
 
                     if self.is_goal_reached(next_title, grid.goal_title.unwrap()) {
+                        self.build_solution_path(grid);
+                        self.display_statistics();
                         return;
                     }
                     self.queue_of_titles.push_back(next_title);
                 }
-            }
-
-            if self.is_goal_reached(current_title, grid.goal_title.unwrap()) {
-                return;
             }
         } else {
             self.is_processing = false;
         }
     }
 }
-
-// pub fn bfs_find_goal(grid: &mut Grid) {
-//     if grid.start.is_none() || grid.end.is_none() {
-//         println!("User did not set the start or end point");
-//         return;
-//     }
-
-//     let mut queue: VecDeque<TitleCoords> = VecDeque::new();
-//     queue.push_back(grid.start.unwrap());
-
-//     let mut visited: Vec<TitleCoords> = Vec::new();
-
-//     // bo x--->
-//     //    |
-//     //
-//     let possible_directions: [(i32, i32); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; //Up, Down, Left, Right
-
-//     while !queue.is_empty() {
-//         let current_title = queue.pop_front().unwrap();
-
-//         if current_title == grid.end.unwrap() {
-//             break;
-//         }
-
-//         //Go to 4 directions
-//         for direction in possible_directions.iter() {
-//             let posible_title = (
-//                 current_title.x as i32 + direction.0,
-//                 current_title.y as i32 + direction.1,
-//             );
-
-//             if posible_title.0 < 0
-//                 || posible_title.0 >= grid.columns as i32
-//                 || posible_title.1 < 0
-//                 || posible_title.1 >= grid.rows as i32
-//             {
-//                 continue;
-//             }
-
-//             let next_title = TitleCoords {
-//                 x: posible_title.0 as usize,
-//                 y: posible_title.1 as usize,
-//             };
-//             if !visited.contains(&next_title) && !grid.is_obstacle(next_title.x, next_title.y) {
-//                 grid.mark_visited(next_title.x, next_title.y);
-//                 visited.push(next_title);
-//                 queue.push_back(next_title);
-//             }
-//         }
-//     }
-// }
