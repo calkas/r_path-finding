@@ -89,10 +89,12 @@ impl Bfs {
 
     /// # start
     /// BFS Algorithm starts.
-    pub fn start(&mut self, grid: &mut Grid) {
+    ///
+    /// Init the algorithm values
+    pub fn start(&mut self, grid: &mut Grid) -> bool {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             println!("User did not set the start or end point");
-            return;
+            return false;
         }
         println!("..::BFS Algorithm:...");
         println!("- Starts");
@@ -101,6 +103,7 @@ impl Bfs {
         self.title_path_mapping
             .insert(Some(grid.start_title.unwrap()), None);
         self.is_processing = true;
+        return true;
     }
 
     /// # update
@@ -150,5 +153,96 @@ impl Bfs {
         } else {
             self.is_processing = false;
         }
+    }
+}
+
+#[cfg(test)]
+
+mod unit_test {
+
+    use super::*;
+    #[test]
+    fn bfs_start() {
+        let mut bfs = Bfs::default();
+        let mut grid = Grid::new(0, 0, 10, 10, 1);
+
+        assert!(bfs.start(&mut grid) == false);
+
+        let start = TitleCoords { x: 0, y: 0 };
+        let end = TitleCoords { x: 1, y: 1 };
+        grid.start_title = Some(start);
+        grid.goal_title = Some(end);
+
+        assert!(bfs.start(&mut grid));
+
+        assert_eq!(bfs.queue_of_titles.len(), 1);
+        assert_eq!(bfs.queue_of_titles[0], start);
+        assert_eq!(bfs.visited_titles.len(), 1);
+        assert_eq!(bfs.visited_titles[0], start);
+        assert!(*bfs.title_path_mapping.get(&Some(start)).unwrap() == None);
+        assert!(bfs.is_processing);
+    }
+
+    #[test]
+    fn bfs_update_one_step() {
+        let mut bfs = Bfs::default();
+        let mut grid = Grid::new(0, 0, 10, 10, 1);
+
+        assert!(bfs.start(&mut grid) == false);
+
+        let start = TitleCoords { x: 3, y: 3 };
+        grid.start_title = Some(start);
+        grid.goal_title = Some(TitleCoords { x: 10, y: 10 });
+
+        assert!(bfs.start(&mut grid));
+
+        // After update
+        //    [ ]
+        // [ ][s][ ]
+        //    [ ]
+
+        bfs.update(&mut grid, ONE_ITERATION_TIME_SEC);
+
+        let mut expected_directions: Vec<TitleCoords> = Vec::new();
+        let mut expected_visited_tiles: Vec<TitleCoords> = Vec::new();
+        expected_visited_tiles.push(start);
+
+        for dir in POSSIBLE_DIRECTIONS.iter() {
+            let coord_x = start.x.checked_add_signed(dir.0);
+            let coord_y = start.y.checked_add_signed(dir.1);
+
+            if coord_x.is_none() || coord_y.is_none() {
+                continue;
+            }
+
+            expected_directions.push(TitleCoords {
+                x: coord_x.unwrap(),
+                y: coord_y.unwrap(),
+            });
+
+            expected_visited_tiles.push(TitleCoords {
+                x: coord_x.unwrap(),
+                y: coord_y.unwrap(),
+            });
+        }
+
+        assert_eq!(bfs.queue_of_titles.len(), 4);
+        for id in 0..bfs.queue_of_titles.len() {
+            assert_eq!(expected_directions[id], bfs.queue_of_titles[id]);
+        }
+
+        assert_eq!(bfs.visited_titles.len(), 5);
+        for id in 0..bfs.visited_titles.len() {
+            assert_eq!(expected_visited_tiles[id], bfs.visited_titles[id]);
+        }
+
+        assert_eq!(bfs.title_path_mapping.len(), 5);
+        for (_, prev_title) in bfs.title_path_mapping.iter().skip(1) {
+            assert_eq!(prev_title.unwrap(), start);
+        }
+
+        assert_eq!(bfs.steps, 1);
+        assert_eq!(bfs.accumulated_time, 0.0);
+        assert!(bfs.is_processing);
     }
 }
