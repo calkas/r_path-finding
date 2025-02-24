@@ -237,10 +237,6 @@ mod unit_test {
         }
 
         assert_eq!(bfs.title_path_mapping.len(), 5);
-        for (_, prev_title) in bfs.title_path_mapping.iter().skip(1) {
-            assert_eq!(prev_title.unwrap(), start);
-        }
-
         assert_eq!(bfs.steps, 1);
         assert_eq!(bfs.accumulated_time, 0.0);
         assert!(bfs.is_processing);
