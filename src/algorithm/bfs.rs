@@ -1,3 +1,4 @@
+use super::Algorithm;
 use crate::map::grid::{Grid, TitleCoords};
 use std::collections::{HashMap, VecDeque};
 
@@ -86,12 +87,14 @@ impl Bfs {
         self.build_solution_path(grid);
         self.display_statistics();
     }
+}
 
+impl Algorithm for Bfs {
     /// # start
     /// BFS Algorithm starts.
     ///
     /// Init the algorithm values
-    pub fn start(&mut self, grid: &mut Grid) -> bool {
+    fn start(&mut self, grid: &mut Grid) -> bool {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             println!("User did not set the start or end point");
             return false;
@@ -108,7 +111,7 @@ impl Bfs {
 
     /// # update
     /// Algorithm processing update every ONE_ITERATION_TIME_SEC until reach the goal
-    pub fn update(&mut self, grid: &mut Grid, delta_time: f64) {
+    fn update(&mut self, grid: &mut Grid, delta_time: f64) {
         if !self.is_processing || !self.should_iterate(delta_time) {
             return;
         }
@@ -153,6 +156,13 @@ impl Bfs {
         } else {
             self.is_processing = false;
         }
+    }
+
+    /// # reset
+    /// Reset the algorithm processing
+    fn reset(&mut self, grid: &mut Grid) {
+        *self = Bfs::default();
+        grid.reset();
     }
 }
 
@@ -240,5 +250,27 @@ mod unit_test {
         assert_eq!(bfs.steps, 1);
         assert_eq!(bfs.accumulated_time, 0.0);
         assert!(bfs.is_processing);
+    }
+
+    #[test]
+    fn bfs_reset() {
+        let mut bfs = Bfs::default();
+        let mut grid = Grid::new(0, 0, 10, 10, 1);
+        let start = TitleCoords { x: 0, y: 0 };
+        let end = TitleCoords { x: 1, y: 1 };
+        grid.start_title = Some(start);
+        grid.goal_title = Some(end);
+
+        bfs.start(&mut grid);
+        bfs.update(&mut grid, ONE_ITERATION_TIME_SEC);
+        bfs.reset(&mut grid);
+
+        assert!(bfs.queue_of_titles.is_empty());
+        assert!(bfs.visited_titles.is_empty());
+        assert!(bfs.path.is_empty());
+        assert!(bfs.title_path_mapping.is_empty());
+        assert!(!bfs.is_processing);
+        assert_eq!(bfs.steps, 0);
+        assert_eq!(bfs.accumulated_time, 0.0);
     }
 }

@@ -118,6 +118,17 @@ impl Grid {
         }
         self.titles[title_coords.x][title_coords.y] == Title::Obstacle
     }
+    /// # reset
+    /// Clear grid
+    pub fn reset(&mut self) {
+        for row in self.titles.iter_mut() {
+            for title in row.iter_mut() {
+                *title = Title::Normal { was_visited: false };
+            }
+        }
+        self.start_title = None;
+        self.goal_title = None;
+    }
 
     fn get_color_for_title(&self, title: &Title) -> Color {
         match *title {
@@ -158,7 +169,7 @@ mod unit_test {
     use super::*;
 
     #[test]
-    fn verify_grid_behave() {
+    fn verify_grid_behavior() {
         let mut grid = Grid::new(0, 0, 50, 50, 10);
         let number_of_titles: usize = grid.titles.iter().map(|row| row.len()).sum();
 
@@ -200,5 +211,25 @@ mod unit_test {
             Title::Path,
             grid.titles[normal_title_coord.x][normal_title_coord.y]
         );
+    }
+    #[test]
+    fn grid_reset() {
+        let mut grid = Grid::new(0, 0, 5, 5, 1);
+
+        grid.start_title = Some(TitleCoords { x: 1, y: 1 });
+        grid.goal_title = Some(TitleCoords { x: 2, y: 3 });
+        grid.mark_visited(TitleCoords { x: 3, y: 3 });
+        grid.mark_visited(TitleCoords { x: 4, y: 1 });
+        grid.mark_visited(TitleCoords { x: 4, y: 2 });
+
+        grid.reset();
+
+        assert!(grid.start_title.is_none());
+        assert!(grid.goal_title.is_none());
+        for row in grid.titles.iter() {
+            for title in row.iter() {
+                assert_eq!(*title, Title::Normal { was_visited: false });
+            }
+        }
     }
 }

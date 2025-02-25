@@ -5,6 +5,7 @@ mod map;
 
 use crate::map::grid::Grid;
 
+use crate::algorithm::Algorithm;
 use algorithm::bfs::Bfs;
 use piston_window::*;
 
@@ -40,6 +41,12 @@ fn main() {
                 }
                 _ => (),
             }
+        }
+
+        if let Some(Button::Keyboard(Key::Escape)) = e.press_args() {
+            println!("Reset");
+            left_clicked_times = 0;
+            bfs.reset(&mut grid);
         }
 
         e.update(|args| {
