@@ -19,13 +19,12 @@ impl App {
     /// Application uses specific algorithm for path finding
     /// ## Example:
     /// ```
-    ///   use r_path_finder::{algorithm, App};
+    ///   use r_path_finder::algorithm;
     ///   use std::cell::RefCell;
     ///   use std::rc::Rc;
     ///
     ///   let bfs = algorithm::bfs::Bfs::default();
     ///   let algorithm: Rc<RefCell<dyn algorithm::Algorithm>> = Rc::new(RefCell::new(bfs));
-    ///   let mut app = App::new(algorithm.clone());
     /// ```
     pub fn new(algorithm: Rc<RefCell<dyn Algorithm>>) -> Self {
         let window: PistonWindow = WindowSettings::new("Path Finding", [640.0, 480.0])
