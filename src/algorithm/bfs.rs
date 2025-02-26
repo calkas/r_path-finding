@@ -106,7 +106,7 @@ impl Algorithm for Bfs {
         self.title_path_mapping
             .insert(Some(grid.start_title.unwrap()), None);
         self.is_processing = true;
-        return true;
+        true
     }
 
     /// # update
