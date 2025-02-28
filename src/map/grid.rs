@@ -130,17 +130,6 @@ impl Grid {
         self.goal_title = None;
     }
 
-    fn get_color_for_title(&self, title: &Title) -> Color {
-        match *title {
-            Title::Normal { was_visited: false } => [1.0, 0.0, 0.0, 1.0],
-            Title::Normal { was_visited: true } => [0.0, 1.0, 0.0, 1.0],
-            Title::Start => [1.0, 0.878, 0.0, 1.0],
-            Title::End => [0.255, 0.706, 0.949, 1.0],
-            Title::Obstacle => [0.569, 0.471, 0.365, 1.0],
-            Title::Path => [0.0, 0.0, 1.0, 1.0],
-        }
-    }
-
     /// # render
     /// Render current grid with titles
     pub fn render(&mut self, ctx: &Context, g: &mut G2d) {
@@ -160,6 +149,17 @@ impl Grid {
                     g,
                 );
             }
+        }
+    }
+
+    fn get_color_for_title(&self, title: &Title) -> Color {
+        match *title {
+            Title::Normal { was_visited: false } => [1.0, 0.0, 0.0, 1.0],
+            Title::Normal { was_visited: true } => [0.0, 1.0, 0.0, 1.0],
+            Title::Start => [1.0, 0.878, 0.0, 1.0],
+            Title::End => [0.255, 0.706, 0.949, 1.0],
+            Title::Obstacle => [0.569, 0.471, 0.365, 1.0],
+            Title::Path => [0.0, 0.0, 1.0, 1.0],
         }
     }
 }

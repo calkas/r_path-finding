@@ -3,13 +3,39 @@ mod map;
 use std::{cell::RefCell, rc::Rc};
 
 use algorithm::Algorithm;
-use map::grid::Grid;
+use map::grid::{Grid, Title};
 use piston_window::*;
+
+mod fsm {
+    #[derive(Clone, Copy, PartialEq, Debug)]
+    pub enum MouseActionState {
+        SetStartPoint,
+        SetEndPoint,
+        StartSimulation,
+    }
+
+    impl MouseActionState {
+        pub fn new() -> Self {
+            Self::SetStartPoint
+        }
+        pub fn next(self) -> Self {
+            match self {
+                Self::SetStartPoint => Self::SetEndPoint,
+                Self::SetEndPoint => Self::StartSimulation,
+                Self::StartSimulation => Self::StartSimulation,
+            }
+        }
+        pub fn reset(self) -> Self {
+            Self::SetStartPoint
+        }
+    }
+}
 
 pub struct App {
     window: PistonWindow,
     grid: Grid,
     path_finding_algorithm: Rc<RefCell<dyn Algorithm>>,
+    mouse_action_fsm: fsm::MouseActionState,
 }
 
 impl App {
@@ -37,50 +63,32 @@ impl App {
             window,
             grid,
             path_finding_algorithm: algorithm,
+            mouse_action_fsm: fsm::MouseActionState::new(),
         }
     }
 
     /// # run
-    /// Run application
+    /// Run application/simulation
     pub fn run(&mut self) {
-        let mut left_click_count = 0;
-        let mut mouse_pos = [0.0, 0.0];
+        let mut mouse_screen_position = [0.0, 0.0];
 
         while let Some(e) = self.window.next() {
             if let Some(pos) = e.mouse_cursor_args() {
-                mouse_pos = pos;
+                mouse_screen_position = pos;
             }
 
             if let Some(Button::Mouse(button)) = e.press_args() {
                 match button {
-                    MouseButton::Left => {
-                        if left_click_count == 0 {
-                            self.grid
-                                .on_mouse_clicked(&mouse_pos, map::grid::Title::Start);
-                        } else if left_click_count == 1 {
-                            self.grid
-                                .on_mouse_clicked(&mouse_pos, map::grid::Title::End);
-                        } else if left_click_count == 2 {
-                            self.path_finding_algorithm
-                                .borrow_mut()
-                                .start(&mut self.grid);
-                        }
-                        left_click_count += 1;
-                    }
+                    MouseButton::Left => self.handle_mouse_action(mouse_screen_position),
                     MouseButton::Right => {
-                        self.grid
-                            .on_mouse_clicked(&mouse_pos, map::grid::Title::Obstacle);
+                        self.grid.on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
                     }
                     _ => (),
                 }
             }
 
             if let Some(Button::Keyboard(Key::Escape)) = e.press_args() {
-                println!("Reset");
-                left_click_count = 0;
-                self.path_finding_algorithm
-                    .borrow_mut()
-                    .reset(&mut self.grid);
+                self.reset_simulation();
             }
 
             e.update(|args| {
@@ -94,5 +102,31 @@ impl App {
                 self.grid.render(&c, g);
             });
         }
+    }
+
+    fn handle_mouse_action(&mut self, mouse_pos: [f64; 2]) {
+        match self.mouse_action_fsm {
+            fsm::MouseActionState::SetStartPoint => {
+                self.grid.on_mouse_clicked(&mouse_pos, Title::Start);
+                self.mouse_action_fsm = self.mouse_action_fsm.next();
+            }
+            fsm::MouseActionState::SetEndPoint => {
+                self.grid.on_mouse_clicked(&mouse_pos, Title::End);
+                self.mouse_action_fsm = self.mouse_action_fsm.next();
+            }
+            fsm::MouseActionState::StartSimulation => {
+                self.path_finding_algorithm
+                    .borrow_mut()
+                    .start(&mut self.grid);
+            }
+        }
+    }
+
+    fn reset_simulation(&mut self) {
+        println!("Reset simulation");
+        self.mouse_action_fsm = self.mouse_action_fsm.reset();
+        self.path_finding_algorithm
+            .borrow_mut()
+            .reset(&mut self.grid);
     }
 }
