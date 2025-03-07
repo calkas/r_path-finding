@@ -5,7 +5,8 @@
 This project uses pathfinding algorithms in the 2D grid to find the shortest path to reach the goal.
 
 ## Grid
-🟥 - Unvisited title 
+
+🟥 - Unvisited title
 🟩 - Visited title
 🟨 - Start
 🟦 - Goal
@@ -15,6 +16,6 @@ This project uses pathfinding algorithms in the 2D grid to find the shortest pat
 ## Algorithm
 This project uses following available algorithms:
 
-* BFS (**Breadth-First Search**)
+* BFS (*Breadth-First Search*)
 
 ![img](./docs/imgs/bfs_work.gif)
