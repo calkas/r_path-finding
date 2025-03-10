@@ -3,7 +3,8 @@ mod map;
 use std::{cell::RefCell, rc::Rc};
 
 use algorithm::Algorithm;
-use map::grid::{Grid, Title};
+use map::grid::Grid;
+use map::Title;
 use piston_window::*;
 
 mod fsm {
@@ -81,7 +82,8 @@ impl App {
                 match button {
                     MouseButton::Left => self.handle_mouse_action(mouse_screen_position),
                     MouseButton::Right => {
-                        self.grid.on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
+                        self.grid
+                            .on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
                     }
                     _ => (),
                 }

@@ -1,5 +1,6 @@
 use super::Algorithm;
-use crate::map::grid::{Grid, TitleCoords};
+use crate::map::grid::Grid;
+use crate::map::TitleCoords;
 use std::collections::{HashMap, VecDeque};
 
 const ONE_ITERATION_TIME_SEC: f64 = 0.3;
