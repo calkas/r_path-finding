@@ -2,6 +2,11 @@
 name = "r_path_finder"
 version = "0.1.0"
 edition = "2021"
+authors = ["Piotr Rybka"]
+readme = "README.md"
+description = "Path finder finds the shortest path to reach the goal in grid 2D"
+repository = "https://github.com/calkas/r_path-finding"
+keywords = ["pathfinding", "bfs", "algorithm"]
 
 [dependencies]
 piston_window = "0.132.0"
