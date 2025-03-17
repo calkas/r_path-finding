@@ -2,7 +2,7 @@ pub mod algorithm;
 mod map;
 use std::{cell::RefCell, rc::Rc};
 
-use algorithm::Algorithm;
+use algorithm::{Algorithm, AlgorithmError};
 use map::grid::Grid;
 use map::Title;
 use piston_window::*;
@@ -13,6 +13,7 @@ mod fsm {
         SetStartPoint,
         SetEndPoint,
         StartSimulation,
+        EndSimulation,
     }
 
     impl MouseActionState {
@@ -23,7 +24,8 @@ mod fsm {
             match self {
                 Self::SetStartPoint => Self::SetEndPoint,
                 Self::SetEndPoint => Self::StartSimulation,
-                Self::StartSimulation => Self::StartSimulation,
+                Self::StartSimulation => Self::EndSimulation,
+                Self::EndSimulation => Self::EndSimulation,
             }
         }
         pub fn reset(self) -> Self {
@@ -37,6 +39,7 @@ pub struct App {
     grid: Grid,
     path_finding_algorithm: Rc<RefCell<dyn Algorithm>>,
     mouse_action_fsm: fsm::MouseActionState,
+    should_update_simulation: bool,
 }
 
 impl App {
@@ -54,7 +57,7 @@ impl App {
     ///   let algorithm: Rc<RefCell<dyn algorithm::Algorithm>> = Rc::new(RefCell::new(bfs));
     /// ```
     pub fn new(algorithm: Rc<RefCell<dyn Algorithm>>) -> Self {
-        let window: PistonWindow = WindowSettings::new("Path Finding", [640.0, 480.0])
+        let window: PistonWindow = WindowSettings::new("R-PathFinder", [640.0, 480.0])
             .build()
             .unwrap();
 
@@ -65,6 +68,7 @@ impl App {
             grid,
             path_finding_algorithm: algorithm,
             mouse_action_fsm: fsm::MouseActionState::new(),
+            should_update_simulation: true,
         }
     }
 
@@ -94,15 +98,29 @@ impl App {
             }
 
             e.update(|args| {
-                self.path_finding_algorithm
-                    .borrow_mut()
-                    .update(&mut self.grid, args.dt);
+                if self.should_update_simulation {
+                    self.update_simulation_state(args);
+                }
             });
 
             self.window.draw_2d(&e, |c, g, _| {
                 clear([0.5, 0.5, 0.5, 1.0], g);
                 self.grid.render(&c, g);
             });
+        }
+    }
+
+    fn update_simulation_state(&mut self, args: &UpdateArgs) {
+        if self.path_finding_algorithm.borrow().has_completed() {
+            println!(
+                "{}",
+                self.path_finding_algorithm.borrow().output_statistics()
+            );
+            self.should_update_simulation = false;
+        } else {
+            self.path_finding_algorithm
+                .borrow_mut()
+                .execute_step(&mut self.grid, args.dt);
         }
     }
 
@@ -117,18 +135,35 @@ impl App {
                 self.mouse_action_fsm = self.mouse_action_fsm.next();
             }
             fsm::MouseActionState::StartSimulation => {
-                self.path_finding_algorithm
+                let s = self
+                    .path_finding_algorithm
                     .borrow_mut()
                     .start(&mut self.grid);
+
+                self.handle_algorithm_error(s);
+                self.mouse_action_fsm = self.mouse_action_fsm.next();
             }
+            fsm::MouseActionState::EndSimulation => {}
         }
     }
 
     fn reset_simulation(&mut self) {
         println!("Reset simulation");
+        self.should_update_simulation = true;
         self.mouse_action_fsm = self.mouse_action_fsm.reset();
         self.path_finding_algorithm
             .borrow_mut()
             .reset(&mut self.grid);
+    }
+
+    fn handle_algorithm_error(&self, status: Result<(), AlgorithmError>) {
+        match status {
+            Err(AlgorithmError::InvalidInputData) => {
+                println!("User did not set the start or end point")
+            }
+            Ok(_) => {
+                println!("Simulation Starts...")
+            }
+        }
     }
 }

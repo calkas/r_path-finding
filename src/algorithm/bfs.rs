@@ -1,4 +1,5 @@
-use super::Algorithm;
+use super::AlgorithmError;
+use super::{Algorithm, Measurable};
 use crate::map::grid::Grid;
 use crate::map::TitleCoords;
 use std::collections::{HashMap, VecDeque};
@@ -22,6 +23,7 @@ pub struct Bfs {
     is_processing: bool,
     steps: u32,
     accumulated_time: f64,
+    has_completed: bool,
 }
 
 impl Default for Bfs {
@@ -34,6 +36,7 @@ impl Default for Bfs {
             is_processing: false,
             steps: 0,
             accumulated_time: 0.0,
+            has_completed: false,
         }
     }
 }
@@ -45,23 +48,6 @@ impl Bfs {
         }
         self.is_processing = false;
         true
-    }
-
-    fn display_statistics(&self) {
-        println!("- Finish");
-        println!("- Statistics:");
-        println!(" * Path length: {}", self.path.len());
-        println!(" * Steps taken: {}", self.steps);
-        println!(" * Visited nodes: {}", self.visited_titles.len());
-        println!(
-            " * Time per iteration: {:.2} seconds",
-            ONE_ITERATION_TIME_SEC
-        );
-        println!(
-            " * Total time: {:.2} seconds",
-            self.steps as f64 * ONE_ITERATION_TIME_SEC
-        );
-        println!("- Done");
     }
 
     fn should_iterate(&mut self, delta_time: f64) -> bool {
@@ -86,8 +72,21 @@ impl Bfs {
     }
 
     fn handle_goal_reached(&mut self, grid: &mut Grid) {
+        self.has_completed = true;
         self.build_solution_path(grid);
-        self.display_statistics();
+    }
+}
+
+impl Measurable for Bfs {
+    fn output_statistics(&self) -> String {
+        format!(
+            "- Statistics:\n * Path length: {}\n * Steps taken: {}\n * Visited nodes: {}\n * Time per iteration: {:.2} seconds\n * Total time: {:.2} seconds\n- Done",
+            self.path.len(),
+            self.steps,
+            self.visited_titles.len(),
+            ONE_ITERATION_TIME_SEC,
+            self.steps as f64 * ONE_ITERATION_TIME_SEC
+        )
     }
 }
 
@@ -96,24 +95,21 @@ impl Algorithm for Bfs {
     /// BFS Algorithm starts.
     ///
     /// Init the algorithm values
-    fn start(&mut self, grid: &mut Grid) -> bool {
+    fn start(&mut self, grid: &mut Grid) -> Result<(), AlgorithmError> {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
-            println!("User did not set the start or end point");
-            return false;
+            return Err(AlgorithmError::InvalidInputData);
         }
-        println!("..::BFS Algorithm:...");
-        println!("- Starts");
         self.queue_of_titles.push_back(grid.start_title.unwrap());
         self.visited_titles.push(grid.start_title.unwrap());
         self.title_path_mapping
             .insert(Some(grid.start_title.unwrap()), None);
         self.is_processing = true;
-        true
+        Ok(())
     }
 
     /// # update
     /// Algorithm processing update every ONE_ITERATION_TIME_SEC until reach the goal
-    fn update(&mut self, grid: &mut Grid, delta_time: f64) {
+    fn execute_step(&mut self, grid: &mut Grid, delta_time: f64) {
         if !self.is_processing || !self.should_iterate(delta_time) {
             return;
         }
@@ -166,6 +162,12 @@ impl Algorithm for Bfs {
         *self = Bfs::default();
         grid.reset();
     }
+
+    /// # has_completed
+    /// Check if processing is done
+    fn has_completed(&self) -> bool {
+        self.has_completed
+    }
 }
 
 #[cfg(test)]
@@ -178,21 +180,21 @@ mod unit_test {
         let mut bfs = Bfs::default();
         let mut grid = Grid::new(0, 0, 10, 10, 1);
 
-        assert!(bfs.start(&mut grid) == false);
+        assert!(bfs.start(&mut grid).is_err());
 
         let start = TitleCoords { x: 0, y: 0 };
         let end = TitleCoords { x: 1, y: 1 };
         grid.start_title = Some(start);
         grid.goal_title = Some(end);
 
-        assert!(bfs.start(&mut grid));
+        assert!(bfs.start(&mut grid).is_ok());
 
         assert_eq!(bfs.queue_of_titles.len(), 1);
         assert_eq!(bfs.queue_of_titles[0], start);
         assert_eq!(bfs.visited_titles.len(), 1);
         assert_eq!(bfs.visited_titles[0], start);
         assert!(*bfs.title_path_mapping.get(&Some(start)).unwrap() == None);
-        assert!(bfs.is_processing);
+        assert!(!bfs.has_completed());
     }
 
     #[test]
@@ -200,20 +202,20 @@ mod unit_test {
         let mut bfs = Bfs::default();
         let mut grid = Grid::new(0, 0, 10, 10, 1);
 
-        assert!(bfs.start(&mut grid) == false);
+        assert!(bfs.start(&mut grid).is_err());
 
         let start = TitleCoords { x: 3, y: 3 };
         grid.start_title = Some(start);
         grid.goal_title = Some(TitleCoords { x: 10, y: 10 });
 
-        assert!(bfs.start(&mut grid));
+        assert!(bfs.start(&mut grid).is_ok());
 
         // After update
         //    [ ]
         // [ ][s][ ]
         //    [ ]
 
-        bfs.update(&mut grid, ONE_ITERATION_TIME_SEC);
+        bfs.execute_step(&mut grid, ONE_ITERATION_TIME_SEC);
 
         let mut expected_directions: Vec<TitleCoords> = Vec::new();
         let mut expected_visited_tiles: Vec<TitleCoords> = Vec::new();
@@ -252,6 +254,7 @@ mod unit_test {
         assert_eq!(bfs.steps, 1);
         assert_eq!(bfs.accumulated_time, 0.0);
         assert!(bfs.is_processing);
+        assert!(!bfs.has_completed());
     }
 
     #[test]
@@ -263,8 +266,8 @@ mod unit_test {
         grid.start_title = Some(start);
         grid.goal_title = Some(end);
 
-        bfs.start(&mut grid);
-        bfs.update(&mut grid, ONE_ITERATION_TIME_SEC);
+        assert!(bfs.start(&mut grid).is_ok());
+        bfs.execute_step(&mut grid, ONE_ITERATION_TIME_SEC);
         bfs.reset(&mut grid);
 
         assert!(bfs.queue_of_titles.is_empty());

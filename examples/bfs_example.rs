@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn main() {
     println!("====== Example ======");
+    println!("..::BFS Algorithm:...");
     let bfs = algorithm::bfs::Bfs::default();
 
     let algorithm: Rc<RefCell<dyn algorithm::Algorithm>> = Rc::new(RefCell::new(bfs));
