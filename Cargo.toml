@@ -7,6 +7,7 @@ readme = "README.md"
 description = "Path finder finds the shortest path to reach the goal in grid 2D"
 repository = "https://github.com/calkas/r_path-finding"
 keywords = ["pathfinding", "bfs", "algorithm"]
+build = "build.rs"
 
 [dependencies]
 piston_window = "0.132.0"
