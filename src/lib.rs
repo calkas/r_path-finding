@@ -1,5 +1,6 @@
 pub mod algorithm;
 mod map;
+use std::path::Path;
 use std::{cell::RefCell, rc::Rc};
 
 use algorithm::{Algorithm, AlgorithmError};
@@ -33,13 +34,28 @@ mod fsm {
         }
     }
 }
-
+mod render_utils {
+    use super::*;
+    pub fn draw_text(glyph: &mut Glyphs, c: Context, g: &mut G2d, text: &str) {
+        let transform = c.transform.trans(410.0, 50.0);
+        for (line_number, line) in text.lines().enumerate() {
+            text::Text::new_color([0.0, 0.0, 0.0, 1.0], 16)
+                .draw(
+                    line,
+                    glyph,
+                    &c.draw_state,
+                    transform.trans(0.0, line_number as f64 * 15.0),
+                    g,
+                )
+                .unwrap();
+        }
+    }
+}
 pub struct App {
     window: PistonWindow,
     grid: Grid,
     path_finding_algorithm: Rc<RefCell<dyn Algorithm>>,
     mouse_action_fsm: fsm::MouseActionState,
-    should_update_simulation: bool,
 }
 
 impl App {
@@ -57,7 +73,7 @@ impl App {
     ///   let algorithm: Rc<RefCell<dyn algorithm::Algorithm>> = Rc::new(RefCell::new(bfs));
     /// ```
     pub fn new(algorithm: Rc<RefCell<dyn Algorithm>>) -> Self {
-        let window: PistonWindow = WindowSettings::new("R-PathFinder", [640.0, 480.0])
+        let window: PistonWindow = WindowSettings::new("R-PathFinder", [700.0, 480.0])
             .build()
             .unwrap();
 
@@ -68,7 +84,6 @@ impl App {
             grid,
             path_finding_algorithm: algorithm,
             mouse_action_fsm: fsm::MouseActionState::new(),
-            should_update_simulation: true,
         }
     }
 
@@ -76,6 +91,7 @@ impl App {
     /// Run application/simulation
     pub fn run(&mut self) {
         let mut mouse_screen_position = [0.0, 0.0];
+        let mut glyph = self.load_font_asset();
 
         while let Some(e) = self.window.next() {
             if let Some(pos) = e.mouse_cursor_args() {
@@ -97,31 +113,37 @@ impl App {
                 self.reset_simulation();
             }
 
-            e.update(|args| {
-                if self.should_update_simulation {
-                    self.update_simulation_state(args);
-                }
+            e.update(|args: &UpdateArgs| {
+                self.update_simulation_state(args);
             });
 
-            self.window.draw_2d(&e, |c, g, _| {
+            self.window.draw_2d(&e, |c, g, device| {
                 clear([0.5, 0.5, 0.5, 1.0], g);
+
+                let algorithm = self.path_finding_algorithm.borrow();
+                if algorithm.has_completed() {
+                    render_utils::draw_text(&mut glyph, c, g, &algorithm.output_statistics());
+                }
+
                 self.grid.render(&c, g);
+                glyph.factory.encoder.flush(device);
             });
         }
     }
 
+    fn load_font_asset(&mut self) -> Glyphs {
+        let out_dir = std::env::var("OUT_DIR").unwrap();
+        let font_dest_path = Path::new(&out_dir).join("assets/fonts/Roboto-Bold.ttf");
+        let glyph = self.window.load_font(font_dest_path).unwrap();
+        glyph
+    }
+
     fn update_simulation_state(&mut self, args: &UpdateArgs) {
-        if self.path_finding_algorithm.borrow().has_completed() {
-            println!(
-                "{}",
-                self.path_finding_algorithm.borrow().output_statistics()
-            );
-            self.should_update_simulation = false;
-        } else {
-            self.path_finding_algorithm
-                .borrow_mut()
-                .execute_step(&mut self.grid, args.dt);
+        let mut algorithm = self.path_finding_algorithm.borrow_mut();
+        if algorithm.has_completed() {
+            return;
         }
+        algorithm.execute_step(&mut self.grid, args.dt);
     }
 
     fn handle_mouse_action(&mut self, mouse_pos: [f64; 2]) {
@@ -149,7 +171,6 @@ impl App {
 
     fn reset_simulation(&mut self) {
         println!("Reset simulation");
-        self.should_update_simulation = true;
         self.mouse_action_fsm = self.mouse_action_fsm.reset();
         self.path_finding_algorithm
             .borrow_mut()

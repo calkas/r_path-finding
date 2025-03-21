@@ -80,7 +80,7 @@ impl Bfs {
 impl Measurable for Bfs {
     fn output_statistics(&self) -> String {
         format!(
-            "- Statistics:\n * Path length: {}\n * Steps taken: {}\n * Visited nodes: {}\n * Time per iteration: {:.2} seconds\n * Total time: {:.2} seconds\n- Done",
+            "- Statistics:\n * Path length: {}\n * Steps taken: {}\n * Visited nodes: {}\n * Time per iteration: {:.2} sec\n * Total time: {:.2} sec\n- Done",
             self.path.len(),
             self.steps,
             self.visited_titles.len(),
