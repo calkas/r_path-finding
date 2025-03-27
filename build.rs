@@ -4,6 +4,7 @@ use std::path::Path;
 /// # Build Script main()
 /// Copies fonts from assets/fonts to __OUT_DIR__ (e.g. target/debug/build/..)
 fn main() {
+    // Env value
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
     let font_dest_path = Path::new(&out_dir).join("assets/fonts");

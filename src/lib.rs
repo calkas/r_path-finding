@@ -54,7 +54,7 @@ mod render_utils {
 pub struct App {
     window: PistonWindow,
     grid: Grid,
-    path_finding_algorithm: Rc<RefCell<dyn Algorithm>>,
+    path_finding_algorithm: Box<dyn Algorithm>,
     mouse_action_fsm: fsm::MouseActionState,
 }
 
@@ -62,17 +62,18 @@ impl App {
     /// # new
     /// Create a new instance of application.
     ///
-    /// Application uses specific algorithm for path finding
+    /// The application uses the strategy pattern to set a specific algorithm for pathfinding.
+    ///
     /// ## Example:
     /// ```
-    ///   use r_path_finder::algorithm;
-    ///   use std::cell::RefCell;
-    ///   use std::rc::Rc;
+    /// use r_path_finder::algorithm::{bfs::Bfs, Algorithm};
+    /// use r_path_finder::App;
     ///
-    ///   let bfs = algorithm::bfs::Bfs::default();
-    ///   let algorithm: Rc<RefCell<dyn algorithm::Algorithm>> = Rc::new(RefCell::new(bfs));
+    /// let bfs: Box<dyn Algorithm> = Box::new(Bfs::default());
+    ///
+    /// let mut app = App::new(bfs);
     /// ```
-    pub fn new(algorithm: Rc<RefCell<dyn Algorithm>>) -> Self {
+    pub fn new(algorithm: Box<dyn Algorithm>) -> Self {
         let window: PistonWindow = WindowSettings::new("R-PathFinder", [700.0, 480.0])
             .build()
             .unwrap();
@@ -120,9 +121,13 @@ impl App {
             self.window.draw_2d(&e, |c, g, device| {
                 clear([0.5, 0.5, 0.5, 1.0], g);
 
-                let algorithm = self.path_finding_algorithm.borrow();
-                if algorithm.has_completed() {
-                    render_utils::draw_text(&mut glyph, c, g, &algorithm.output_statistics());
+                if self.path_finding_algorithm.has_completed() {
+                    render_utils::draw_text(
+                        &mut glyph,
+                        c,
+                        g,
+                        &self.path_finding_algorithm.output_statistics(),
+                    );
                 }
 
                 self.grid.render(&c, g);
@@ -139,11 +144,11 @@ impl App {
     }
 
     fn update_simulation_state(&mut self, args: &UpdateArgs) {
-        let mut algorithm = self.path_finding_algorithm.borrow_mut();
-        if algorithm.has_completed() {
+        if self.path_finding_algorithm.has_completed() {
             return;
         }
-        algorithm.execute_step(&mut self.grid, args.dt);
+        self.path_finding_algorithm
+            .execute_step(&mut self.grid, args.dt);
     }
 
     fn handle_mouse_action(&mut self, mouse_pos: [f64; 2]) {
@@ -157,10 +162,7 @@ impl App {
                 self.mouse_action_fsm = self.mouse_action_fsm.next();
             }
             fsm::MouseActionState::StartSimulation => {
-                let s = self
-                    .path_finding_algorithm
-                    .borrow_mut()
-                    .start(&mut self.grid);
+                let s = self.path_finding_algorithm.start(&mut self.grid);
 
                 self.handle_algorithm_error(s);
                 self.mouse_action_fsm = self.mouse_action_fsm.next();
@@ -172,9 +174,7 @@ impl App {
     fn reset_simulation(&mut self) {
         println!("Reset simulation");
         self.mouse_action_fsm = self.mouse_action_fsm.reset();
-        self.path_finding_algorithm
-            .borrow_mut()
-            .reset(&mut self.grid);
+        self.path_finding_algorithm.reset(&mut self.grid);
     }
 
     fn handle_algorithm_error(&self, status: Result<(), AlgorithmError>) {
