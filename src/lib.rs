@@ -1,12 +1,11 @@
 pub mod algorithm;
 mod map;
-use std::path::Path;
-use std::{cell::RefCell, rc::Rc};
 
 use algorithm::{Algorithm, AlgorithmError};
 use map::grid::Grid;
 use map::Title;
 use piston_window::*;
+use std::path::Path;
 
 mod fsm {
     #[derive(Clone, Copy, PartialEq, Debug)]
@@ -71,7 +70,6 @@ impl App {
     ///
     /// let bfs: Box<dyn Algorithm> = Box::new(Bfs::default());
     ///
-    /// let mut app = App::new(bfs);
     /// ```
     pub fn new(algorithm: Box<dyn Algorithm>) -> Self {
         let window: PistonWindow = WindowSettings::new("R-PathFinder", [700.0, 480.0])
