@@ -1,5 +1,6 @@
 pub mod algorithm;
 mod map;
+mod render_utils;
 
 use algorithm::{Algorithm, AlgorithmError};
 use map::grid::Grid;
@@ -33,31 +34,22 @@ mod fsm {
         }
     }
 }
-mod render_utils {
-    use super::*;
-    pub fn draw_text(glyph: &mut Glyphs, c: Context, g: &mut G2d, text: &str) {
-        let transform = c.transform.trans(410.0, 50.0);
-        for (line_number, line) in text.lines().enumerate() {
-            text::Text::new_color([0.0, 0.0, 0.0, 1.0], 16)
-                .draw(
-                    line,
-                    glyph,
-                    &c.draw_state,
-                    transform.trans(0.0, line_number as f64 * 15.0),
-                    g,
-                )
-                .unwrap();
-        }
-    }
+
+pub mod application_message {
+    pub const WELCOME: &str = "R PATH FINDER\n\n - 1-click left mouse button sets start\n\n - 2-click left mouse button sets goal\n\n - right mouse button sets obstacle\n\n - 3-click left mouse button starts\n  the simulation\n\n - Esc - restart simulation";
+    pub const SIMULATION_STARTS: &str = "Simulation Starts...";
+    pub const DONE: &str = "Done";
 }
-pub struct App {
+
+pub struct App<'a> {
     window: PistonWindow,
     grid: Grid,
     path_finding_algorithm: Box<dyn Algorithm>,
     mouse_action_fsm: fsm::MouseActionState,
+    output_log: &'a str,
 }
 
-impl App {
+impl App<'_> {
     /// # new
     /// Create a new instance of application.
     ///
@@ -83,6 +75,7 @@ impl App {
             grid,
             path_finding_algorithm: algorithm,
             mouse_action_fsm: fsm::MouseActionState::new(),
+            output_log: application_message::WELCOME,
         }
     }
 
@@ -119,12 +112,25 @@ impl App {
             self.window.draw_2d(&e, |c, g, device| {
                 clear([0.5, 0.5, 0.5, 1.0], g);
 
+                render_utils::draw_text(
+                    self.output_log,
+                    [410.0, 50.0],
+                    16,
+                    render_utils::color::BLACK,
+                    &mut glyph,
+                    &c,
+                    g,
+                );
+
                 if self.path_finding_algorithm.has_completed() {
                     render_utils::draw_text(
-                        &mut glyph,
-                        c,
-                        g,
                         &self.path_finding_algorithm.output_statistics(),
+                        [410.0, 100.0],
+                        16,
+                        render_utils::color::BLACK,
+                        &mut glyph,
+                        &c,
+                        g,
                     );
                 }
 
@@ -137,12 +143,12 @@ impl App {
     fn load_font_asset(&mut self) -> Glyphs {
         let out_dir = std::env::var("OUT_DIR").unwrap();
         let font_dest_path = Path::new(&out_dir).join("assets/fonts/Roboto-Bold.ttf");
-        let glyph = self.window.load_font(font_dest_path).unwrap();
-        glyph
+        self.window.load_font(font_dest_path).unwrap()
     }
 
     fn update_simulation_state(&mut self, args: &UpdateArgs) {
         if self.path_finding_algorithm.has_completed() {
+            self.output_log = application_message::DONE;
             return;
         }
         self.path_finding_algorithm
@@ -161,7 +167,6 @@ impl App {
             }
             fsm::MouseActionState::StartSimulation => {
                 let s = self.path_finding_algorithm.start(&mut self.grid);
-
                 self.handle_algorithm_error(s);
                 self.mouse_action_fsm = self.mouse_action_fsm.next();
             }
@@ -170,18 +175,18 @@ impl App {
     }
 
     fn reset_simulation(&mut self) {
-        println!("Reset simulation");
+        self.output_log = application_message::WELCOME;
         self.mouse_action_fsm = self.mouse_action_fsm.reset();
         self.path_finding_algorithm.reset(&mut self.grid);
     }
 
-    fn handle_algorithm_error(&self, status: Result<(), AlgorithmError>) {
+    fn handle_algorithm_error(&mut self, status: Result<(), AlgorithmError>) {
         match status {
             Err(AlgorithmError::InvalidInputData) => {
                 println!("User did not set the start or end point")
             }
             Ok(_) => {
-                println!("Simulation Starts...")
+                self.output_log = application_message::SIMULATION_STARTS;
             }
         }
     }
