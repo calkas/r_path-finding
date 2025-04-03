@@ -6,7 +6,6 @@ use algorithm::{Algorithm, AlgorithmError};
 use map::grid::Grid;
 use map::Title;
 use piston_window::*;
-use std::path::Path;
 
 mod fsm {
     #[derive(Clone, Copy, PartialEq, Debug)]
@@ -141,9 +140,10 @@ impl App<'_> {
     }
 
     fn load_font_asset(&mut self) -> Glyphs {
-        let out_dir = std::env::var("OUT_DIR").unwrap();
-        let font_dest_path = Path::new(&out_dir).join("assets/fonts/Roboto-Bold.ttf");
-        self.window.load_font(font_dest_path).unwrap()
+        let font_source_path = std::env::current_dir()
+            .unwrap()
+            .join("assets/fonts/Roboto-Bold.ttf");
+        self.window.load_font(font_source_path).unwrap()
     }
 
     fn update_simulation_state(&mut self, args: &UpdateArgs) {
