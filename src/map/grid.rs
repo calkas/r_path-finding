@@ -84,6 +84,21 @@ impl Grid {
         self.titles[title_coords.x][title_coords.y] = Title::Normal { was_visited: true };
     }
 
+    /// # mark_process
+    /// Mark title in processing state
+    pub fn mark_process(&mut self, title_coords: TitleCoords) {
+        if !self.is_within_bounds(title_coords) {
+            return;
+        }
+
+        if self.titles[title_coords.x][title_coords.y] == Title::Start
+            || self.titles[title_coords.x][title_coords.y] == Title::End
+        {
+            return;
+        }
+        self.titles[title_coords.x][title_coords.y] = Title::Process;
+    }
+
     /// # set_trace_back_path
     /// Set title to be a title path
     pub fn set_trace_back_path(&mut self, title_coords: TitleCoords) {
@@ -142,6 +157,7 @@ impl Grid {
             Title::End => [0.255, 0.706, 0.949, 1.0],
             Title::Obstacle => [0.569, 0.471, 0.365, 1.0],
             Title::Path => [0.0, 0.0, 1.0, 1.0],
+            Title::Process => [0.45, 0.984, 0.84, 1.0],
         }
     }
 }

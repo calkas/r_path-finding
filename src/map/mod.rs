@@ -17,4 +17,5 @@ pub enum Title {
     End,
     Obstacle,
     Path,
+    Process,
 }

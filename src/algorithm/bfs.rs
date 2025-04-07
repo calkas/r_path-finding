@@ -4,7 +4,7 @@ use crate::map::grid::Grid;
 use crate::map::TitleCoords;
 use std::collections::{HashMap, VecDeque};
 
-const ONE_ITERATION_TIME_SEC: f64 = 0.3;
+const ONE_ITERATION_TIME_SEC: f64 = 0.1;
 
 /// FYI the coordinate system is
 ///
@@ -122,6 +122,8 @@ impl Algorithm for Bfs {
                 return;
             }
 
+            grid.mark_visited(current_title);
+
             for direction in POSSIBLE_DIRECTIONS.iter() {
                 let coord_x = current_title.x.checked_add_signed(direction.0);
                 let coord_y = current_title.y.checked_add_signed(direction.1);
@@ -139,7 +141,7 @@ impl Algorithm for Bfs {
                     && grid.is_within_bounds(next_title)
                     && !grid.is_obstacle(next_title)
                 {
-                    grid.mark_visited(next_title);
+                    grid.mark_process(next_title);
                     self.visited_titles.push(next_title);
                     self.title_path_mapping
                         .insert(Some(next_title), Some(current_title));
