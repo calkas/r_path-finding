@@ -1,18 +1,9 @@
 use super::AlgorithmError;
 use super::{Algorithm, Measurable};
+use super::{ONE_ITERATION_TIME_SEC, POSSIBLE_DIRECTIONS};
 use crate::map::grid::Grid;
 use crate::map::TitleCoords;
 use std::collections::{HashMap, VecDeque};
-
-const ONE_ITERATION_TIME_SEC: f64 = 0.1;
-
-/// FYI the coordinate system is
-///
-/// (0,0)----> x    <br>
-/// |               <br>
-/// |               <br>
-/// V y             <br>
-const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
 
 /// # Breadth-First Search Algorithm
 pub struct Bfs {

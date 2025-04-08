@@ -1,5 +1,16 @@
 use crate::map::grid::Grid;
 pub mod bfs;
+
+const ONE_ITERATION_TIME_SEC: f64 = 0.1;
+
+/// FYI the coordinate system is
+///
+/// (0,0)----> x    <br>
+/// |               <br>
+/// |               <br>
+/// V y             <br>
+const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
+
 #[derive(Debug)]
 pub enum AlgorithmError {
     InvalidInputData,
