@@ -72,13 +72,7 @@ impl Grid {
     /// # mark_visited
     /// Mark title visited
     pub fn mark_visited(&mut self, title_coords: TitleCoords) {
-        if !self.is_within_bounds(title_coords) {
-            return;
-        }
-
-        if self.titles[title_coords.x][title_coords.y] == Title::Start
-            || self.titles[title_coords.x][title_coords.y] == Title::End
-        {
+        if !self.is_within_bounds(title_coords) || self.is_title_start_or_end(title_coords) {
             return;
         }
         self.titles[title_coords.x][title_coords.y] = Title::Normal { was_visited: true };
@@ -87,13 +81,7 @@ impl Grid {
     /// # mark_process
     /// Mark title in processing state
     pub fn mark_process(&mut self, title_coords: TitleCoords) {
-        if !self.is_within_bounds(title_coords) {
-            return;
-        }
-
-        if self.titles[title_coords.x][title_coords.y] == Title::Start
-            || self.titles[title_coords.x][title_coords.y] == Title::End
-        {
+        if !self.is_within_bounds(title_coords) || self.is_title_start_or_end(title_coords) {
             return;
         }
         self.titles[title_coords.x][title_coords.y] = Title::Process;
@@ -103,7 +91,10 @@ impl Grid {
     /// Set title to be a title path
     pub fn set_trace_back_path(&mut self, title_coords: TitleCoords) {
         if self.is_within_bounds(title_coords) {
-            self.titles[title_coords.x][title_coords.y] = Title::Path;
+            if self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: true })
+            {
+                self.titles[title_coords.x][title_coords.y] = Title::Path;
+            }
         }
     }
 
@@ -159,6 +150,15 @@ impl Grid {
             Title::Path => [0.0, 0.0, 1.0, 1.0],
             Title::Process => [0.45, 0.984, 0.84, 1.0],
         }
+    }
+
+    fn is_title_start_or_end(&self, title_coords: TitleCoords) -> bool {
+        if self.titles[title_coords.x][title_coords.y] == Title::Start
+            || self.titles[title_coords.x][title_coords.y] == Title::End
+        {
+            return true;
+        }
+        return false;
     }
 }
 
