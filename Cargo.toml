@@ -11,3 +11,4 @@ build = "build.rs"
 
 [dependencies]
 piston_window = "0.132.0"
+priority-queue = "2.3.1"

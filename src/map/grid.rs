@@ -2,6 +2,14 @@ use super::{Title, TitleCoords};
 use piston_window::types::Color;
 use piston_window::{rectangle, Context, G2d};
 
+/// FYI the coordinate system is
+///
+/// (0,0)----> x    <br>
+/// |               <br>
+/// |               <br>
+/// V y             <br>
+const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
+
 /// # Grid
 /// Grid of titles used for path-finding algorithms
 pub struct Grid {
@@ -61,6 +69,31 @@ impl Grid {
             }
             self.titles[x][y] = title;
         }
+    }
+
+    /// # get_neighbors
+    /// Get title neighbors for current title
+    pub fn get_neighbors(&mut self, current_coord: TitleCoords) -> Vec<TitleCoords> {
+        let neighbors = POSSIBLE_DIRECTIONS
+            .into_iter()
+            .filter_map(|step_direction| {
+                let coord_x = current_coord.x.checked_add_signed(step_direction.0)?;
+                let coord_y = current_coord.y.checked_add_signed(step_direction.1)?;
+
+                let neighbor_coordinates = TitleCoords {
+                    x: coord_x,
+                    y: coord_y,
+                };
+
+                if !self.is_within_bounds(neighbor_coordinates)
+                    || self.is_obstacle(neighbor_coordinates)
+                {
+                    return None;
+                }
+                Some(neighbor_coordinates)
+            })
+            .collect();
+        return neighbors;
     }
 
     /// # is_within_bounds
