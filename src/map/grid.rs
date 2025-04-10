@@ -8,7 +8,7 @@ use piston_window::{rectangle, Context, G2d};
 /// |               <br>
 /// |               <br>
 /// V y             <br>
-const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
+pub const POSSIBLE_DIRECTIONS: [(isize, isize); 4] = [(0, -1), (0, 1), (-1, 0), (1, 0)]; // Up, Down, Left, Right
 
 /// # Grid
 /// Grid of titles used for path-finding algorithms
@@ -261,6 +261,29 @@ mod unit_test {
             for title in row.iter() {
                 assert_eq!(*title, Title::Normal { was_visited: false });
             }
+        }
+    }
+    #[test]
+    fn calculate_neighbors() {
+        let mut grid = Grid::new(0, 0, 10, 10, 1);
+
+        grid.start_title = Some(TitleCoords { x: 5, y: 5 });
+        grid.goal_title = Some(TitleCoords { x: 9, y: 9 });
+
+        let start = grid.start_title.unwrap();
+
+        let neighbors = grid.get_neighbors(start);
+
+        let exp_neighbors = [
+            TitleCoords { x: 5, y: 4 },
+            TitleCoords { x: 5, y: 6 },
+            TitleCoords { x: 4, y: 5 },
+            TitleCoords { x: 6, y: 5 },
+        ];
+
+        assert_eq!(4, neighbors.len());
+        for (id, actual) in neighbors.iter().enumerate() {
+            assert_eq!(exp_neighbors[id], *actual);
         }
     }
 }

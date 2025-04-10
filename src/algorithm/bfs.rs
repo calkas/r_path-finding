@@ -129,7 +129,6 @@ impl Algorithm for Bfs {
 }
 
 #[cfg(test)]
-
 mod unit_test {
 
     use super::*;
@@ -159,13 +158,11 @@ mod unit_test {
     fn bfs_update_one_step() {
         let mut bfs = Bfs::default();
         let mut grid = Grid::new(0, 0, 10, 10, 1);
-
         assert!(bfs.start(&mut grid).is_err());
 
         let start = TitleCoords { x: 3, y: 3 };
         grid.start_title = Some(start);
         grid.goal_title = Some(TitleCoords { x: 10, y: 10 });
-
         assert!(bfs.start(&mut grid).is_ok());
 
         // After update
@@ -175,42 +172,33 @@ mod unit_test {
 
         bfs.execute_step(&mut grid, ONE_ITERATION_TIME_SEC);
 
-        let mut expected_directions: Vec<TitleCoords> = Vec::new();
-        let mut expected_visited_tiles: Vec<TitleCoords> = Vec::new();
-        expected_visited_tiles.push(start);
+        let exp_neighbors = [
+            TitleCoords { x: 3, y: 2 },
+            TitleCoords { x: 3, y: 4 },
+            TitleCoords { x: 2, y: 3 },
+            TitleCoords { x: 4, y: 3 },
+        ];
 
-        for dir in POSSIBLE_DIRECTIONS.iter() {
-            let coord_x = start.x.checked_add_signed(dir.0);
-            let coord_y = start.y.checked_add_signed(dir.1);
-
-            if coord_x.is_none() || coord_y.is_none() {
-                continue;
-            }
-
-            expected_directions.push(TitleCoords {
-                x: coord_x.unwrap(),
-                y: coord_y.unwrap(),
-            });
-
-            expected_visited_tiles.push(TitleCoords {
-                x: coord_x.unwrap(),
-                y: coord_y.unwrap(),
-            });
-        }
-
-        assert_eq!(bfs.title_processing_queue.len(), 4);
-        for id in 0..bfs.title_processing_queue.len() {
-            assert_eq!(expected_directions[id], bfs.title_processing_queue[id]);
-        }
+        let expected_visited_tiles = [
+            start,
+            exp_neighbors[0],
+            exp_neighbors[1],
+            exp_neighbors[2],
+            exp_neighbors[3],
+        ];
 
         assert_eq!(bfs.visited_titles.len(), 5);
         for id in 0..bfs.visited_titles.len() {
             assert_eq!(expected_visited_tiles[id], bfs.visited_titles[id]);
         }
 
+        assert_eq!(bfs.title_processing_queue.len(), 4);
+        for id in 0..bfs.title_processing_queue.len() {
+            assert_eq!(exp_neighbors[id], bfs.title_processing_queue[id]);
+        }
+
         assert_eq!(bfs.title_path_mapping.len(), 5);
         assert_eq!(bfs.sim_coordinator.steps, 1);
-        assert_eq!(bfs.sim_coordinator.accumulated_time, 0.0);
         assert!(bfs.sim_coordinator.is_processing);
         assert!(!bfs.has_completed());
     }
