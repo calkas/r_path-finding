@@ -63,7 +63,9 @@ impl App<'_> {
     ///
     /// ```
     pub fn new(algorithm: Box<dyn Algorithm>) -> Self {
-        let window: PistonWindow = WindowSettings::new("R-PathFinder", [700.0, 480.0])
+        let title_window = "R-PathFinder - ".to_string() + &algorithm.name();
+
+        let window: PistonWindow = WindowSettings::new(title_window, [700.0, 480.0])
             .build()
             .unwrap();
 

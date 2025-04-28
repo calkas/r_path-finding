@@ -18,6 +18,7 @@ pub trait Algorithm: Measurable {
     fn execute_step(&mut self, grid: &mut Grid, delta_time: f64);
     fn reset(&mut self, grid: &mut Grid);
     fn has_completed(&self) -> bool;
+    fn name(&self) -> String;
 }
 
 pub struct SimulationCoordinator {

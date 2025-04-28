@@ -81,11 +81,11 @@ impl Algorithm for Bfs {
         if !self.sim_coordinator.is_ready_to_execute(delta_time) {
             return;
         }
-
         if let Some(current) = self.title_processing_queue.pop_front() {
             self.sim_coordinator.increase_step_count();
             let goal = grid.goal_title.unwrap();
 
+            // Early exit
             if self.sim_coordinator.is_goal_reached(current, goal) {
                 self.handle_goal_reached(grid);
                 return;
@@ -100,12 +100,6 @@ impl Algorithm for Bfs {
                     self.visited_titles.push(neighbor_title);
                     self.title_path_mapping
                         .insert(Some(neighbor_title), Some(current));
-
-                    // Early exit
-                    if self.sim_coordinator.is_goal_reached(current, goal) {
-                        self.handle_goal_reached(grid);
-                        return;
-                    }
                     self.title_processing_queue.push_back(neighbor_title);
                 }
             }
@@ -125,6 +119,12 @@ impl Algorithm for Bfs {
     /// Check if processing is done
     fn has_completed(&self) -> bool {
         return self.sim_coordinator.has_completed;
+    }
+
+    /// # name
+    /// Algorithm name
+    fn name(&self) -> String {
+        "BFS".to_string()
     }
 }
 

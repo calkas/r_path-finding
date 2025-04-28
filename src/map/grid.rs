@@ -95,6 +95,11 @@ impl Grid {
             .collect();
         return neighbors;
     }
+    /// # cost
+    /// The movement cost - Is 1 for normal grid
+    pub fn cost(&self, _current: TitleCoords, _next: TitleCoords) -> i32 {
+        1
+    }
 
     /// # is_within_bounds
     /// Check if coordinate of title is in the grid
