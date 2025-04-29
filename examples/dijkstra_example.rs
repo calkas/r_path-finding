@@ -11,4 +11,5 @@ fn main() {
     let mut app = App::new(dijkstra);
 
     app.run();
+    println!("======== DONE =======");
 }

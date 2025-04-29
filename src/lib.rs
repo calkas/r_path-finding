@@ -35,7 +35,7 @@ mod fsm {
 }
 
 pub mod application_message {
-    pub const WELCOME: &str = "R PATH FINDER\n\n - 1-click left mouse button sets start\n\n - 2-click left mouse button sets goal\n\n - right mouse button sets obstacle\n\n - 3-click left mouse button starts\n  the simulation\n\n - Esc - restart simulation";
+    pub const WELCOME: &str = "..::R-PATH-FINDER::..\n\n - 1-click left mouse button sets start\n\n - 2-click left mouse button sets goal\n\n - right mouse button sets obstacle\n\n - 3-click left mouse button starts\n  the simulation\n\n - Esc - restart simulation";
     pub const SIMULATION_STARTS: &str = "Simulation Starts...";
     pub const DONE: &str = "Done";
 }

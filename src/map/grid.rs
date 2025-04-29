@@ -93,7 +93,7 @@ impl Grid {
                 Some(neighbor_coordinates)
             })
             .collect();
-        return neighbors;
+        neighbors
     }
     /// # cost
     /// The movement cost - Is 1 for normal grid
@@ -128,11 +128,8 @@ impl Grid {
     /// # set_trace_back_path
     /// Set title to be a title path
     pub fn set_trace_back_path(&mut self, title_coords: TitleCoords) {
-        if self.is_within_bounds(title_coords) {
-            if self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: true })
-            {
-                self.titles[title_coords.x][title_coords.y] = Title::Path;
-            }
+        if self.is_within_bounds(title_coords) && self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: true }) {
+            self.titles[title_coords.x][title_coords.y] = Title::Path;
         }
     }
 
@@ -196,7 +193,7 @@ impl Grid {
         {
             return true;
         }
-        return false;
+        false
     }
 }
 

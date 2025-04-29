@@ -11,4 +11,5 @@ fn main() {
     let mut app = App::new(bfs);
 
     app.run();
+    println!("======== DONE =======");
 }

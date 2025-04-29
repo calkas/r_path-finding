@@ -1,28 +1,15 @@
-use super::ONE_ITERATION_TIME_SEC;
-use super::{Algorithm, AlgorithmError, Measurable, SimulationCoordinator};
-use crate::map::grid::Grid;
-use crate::map::TitleCoords;
+use super::{Algorithm, AlgorithmError, Measurable, SimulationCoordinator, ONE_ITERATION_TIME_SEC};
+use crate::map::{grid::Grid, TitleCoords};
 use std::collections::{HashMap, VecDeque};
 
 /// # Breadth-First Search Algorithm
+#[derive(Default)]
 pub struct Bfs {
     title_processing_queue: VecDeque<TitleCoords>,
     visited_titles: Vec<TitleCoords>,
     path: Vec<TitleCoords>,
     title_path_mapping: HashMap<Option<TitleCoords>, Option<TitleCoords>>,
     sim_coordinator: SimulationCoordinator,
-}
-
-impl Default for Bfs {
-    fn default() -> Self {
-        Self {
-            title_processing_queue: VecDeque::default(),
-            visited_titles: Vec::default(),
-            path: Vec::default(),
-            title_path_mapping: HashMap::default(),
-            sim_coordinator: SimulationCoordinator::default(),
-        }
-    }
 }
 
 impl Bfs {
@@ -47,7 +34,7 @@ impl Bfs {
 impl Measurable for Bfs {
     fn output_statistics(&self) -> String {
         format!(
-            "Statistics:\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
+            "BFS Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
             self.path.len(),
             self.sim_coordinator.steps,
             self.visited_titles.len(),
@@ -118,7 +105,7 @@ impl Algorithm for Bfs {
     /// # has_completed
     /// Check if processing is done
     fn has_completed(&self) -> bool {
-        return self.sim_coordinator.has_completed;
+        self.sim_coordinator.has_completed
     }
 
     /// # name

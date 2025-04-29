@@ -1,31 +1,16 @@
-use super::ONE_ITERATION_TIME_SEC;
-use super::{Algorithm, AlgorithmError, Measurable, SimulationCoordinator};
-use crate::map::grid::Grid;
-use crate::map::TitleCoords;
+use super::{Algorithm, AlgorithmError, Measurable, SimulationCoordinator, ONE_ITERATION_TIME_SEC};
+use crate::map::{grid::Grid, TitleCoords};
 use priority_queue::DoublePriorityQueue;
 use std::collections::HashMap;
 /// # Dijkstra's Algorithm **(Uniform Cost Search)**
 ///  Tracks movement costs to reach goal.
+#[derive(Default)]
 pub struct Dijkstra {
     priority_titles: DoublePriorityQueue<TitleCoords, i32>,
     cost_so_far: HashMap<TitleCoords, i32>,
     title_path_mapping: HashMap<Option<TitleCoords>, Option<TitleCoords>>,
     path: Vec<TitleCoords>,
-    visited_titles: Vec<TitleCoords>,
     sim_coordinator: SimulationCoordinator,
-}
-
-impl Default for Dijkstra {
-    fn default() -> Self {
-        Self {
-            priority_titles: DoublePriorityQueue::new(),
-            cost_so_far: HashMap::default(),
-            title_path_mapping: HashMap::default(),
-            path: Vec::new(),
-            visited_titles: Vec::new(),
-            sim_coordinator: SimulationCoordinator::default(),
-        }
-    }
 }
 
 impl Dijkstra {
@@ -50,12 +35,12 @@ impl Dijkstra {
 impl Measurable for Dijkstra {
     fn output_statistics(&self) -> String {
         format!(
-            "Statistics:\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
+            "Dijkstra Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec\n",
             self.path.len(),
             self.sim_coordinator.steps,
-            self.visited_titles.len(),
+            self.cost_so_far.len(),
             ONE_ITERATION_TIME_SEC,
-            self.sim_coordinator.steps as f64 * ONE_ITERATION_TIME_SEC
+            self.sim_coordinator.steps as f64 * ONE_ITERATION_TIME_SEC,
         )
     }
 }
@@ -107,7 +92,6 @@ impl Algorithm for Dijkstra {
                 if !self.cost_so_far.contains_key(&neighbor)
                     || new_cost < *self.cost_so_far.get(&neighbor).unwrap()
                 {
-                    self.visited_titles.push(neighbor);
                     grid.mark_process(neighbor);
                     self.cost_so_far.insert(neighbor, new_cost);
                     let priority = new_cost;
@@ -131,7 +115,7 @@ impl Algorithm for Dijkstra {
     /// # has_completed
     /// Check if processing is done
     fn has_completed(&self) -> bool {
-        return self.sim_coordinator.has_completed;
+        self.sim_coordinator.has_completed
     }
 
     /// # name

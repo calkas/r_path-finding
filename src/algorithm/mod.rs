@@ -44,7 +44,7 @@ impl SimulationCoordinator {
         if self.is_processing || self.should_iterate(delta_time) {
             return true;
         }
-        return false;
+        false
     }
     pub fn increase_step_count(&mut self) {
         self.steps += 1;
