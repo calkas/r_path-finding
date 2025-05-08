@@ -72,32 +72,63 @@ impl SimulationCoordinator {
 #[derive(Default)]
 pub struct Pathfinder {
     path: HashMap<TitleCoords, Option<TitleCoords>>,
-    solution: Vec<TitleCoords>,
+    solution_path: Vec<TitleCoords>,
 }
 
 impl Pathfinder {
-    pub fn create_path(&mut self, came_from: TitleCoords, to: Option<TitleCoords>) {
+    pub fn add_to_path(&mut self, came_from: TitleCoords, to: Option<TitleCoords>) {
         self.path.insert(came_from, to);
     }
     pub fn reconstruct_path(&mut self, start: TitleCoords, goal: TitleCoords) {
         let mut current = goal;
 
         while current != start {
-            self.solution.push(current);
+            self.solution_path.push(current);
             let c = *self
                 .path
                 .get(&current)
                 .expect("Title for path reconstructing is wrong");
             current = c.unwrap();
         }
-
-        self.solution.push(start);
+        self.solution_path.push(start);
+    }
+    pub fn get_path(&self) -> &Vec<TitleCoords> {
+        &self.solution_path
     }
 }
 
 #[cfg(test)]
 mod unit_test {
     use super::*;
+
+    #[test]
+    fn simulation_coordinator() {
+        let mut sim = SimulationCoordinator::default();
+
+        // Ready for execution test case
+        let mut delta_time = 0.001;
+        assert!(!sim.is_ready_to_execute(delta_time));
+        assert_eq!(sim.accumulated_time, delta_time);
+
+        delta_time += ONE_ITERATION_TIME_SEC;
+        assert!(sim.is_ready_to_execute(delta_time));
+        assert_eq!(sim.accumulated_time, 0.0);
+
+        // Goal Reached test case
+        let start = TitleCoords { x: 0, y: 0 };
+        let mut goal = TitleCoords { x: 0, y: 1 };
+        assert!(!sim.is_goal_reached(start, goal));
+
+        goal = start;
+        assert!(sim.is_goal_reached(start, goal));
+
+        // Increase step case
+        sim.increase_step_count();
+        sim.increase_step_count();
+        sim.increase_step_count();
+
+        assert_eq!(sim.steps, 3);
+    }
     #[test]
     fn path_finding() {
         let mut path_finder = Pathfinder::default();
@@ -111,14 +142,14 @@ mod unit_test {
 
         let exp_solution_path = vec![path_goal, path_3, path_2, path_1, path_start];
 
-        path_finder.create_path(path_start, None);
-        path_finder.create_path(path_1, Some(path_start));
-        path_finder.create_path(path_2, Some(path_1));
-        path_finder.create_path(path_3, Some(path_2));
-        path_finder.create_path(path_goal, Some(path_3));
+        path_finder.add_to_path(path_start, None);
+        path_finder.add_to_path(path_1, Some(path_start));
+        path_finder.add_to_path(path_2, Some(path_1));
+        path_finder.add_to_path(path_3, Some(path_2));
+        path_finder.add_to_path(path_goal, Some(path_3));
 
         path_finder.reconstruct_path(path_start, path_goal);
 
-        assert_eq!(exp_solution_path, path_finder.solution);
+        assert_eq!(exp_solution_path, *path_finder.get_path());
     }
 }
