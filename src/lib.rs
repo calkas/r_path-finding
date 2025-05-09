@@ -85,18 +85,33 @@ impl App<'_> {
     pub fn run(&mut self) {
         let mut mouse_screen_position = [0.0, 0.0];
         let mut glyph = self.load_font_asset();
+        let mut is_drawing_locked = false;
 
         while let Some(e) = self.window.next() {
             if let Some(pos) = e.mouse_cursor_args() {
                 mouse_screen_position = pos;
+                if is_drawing_locked {
+                    self.grid
+                        .on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
+                }
             }
 
             if let Some(Button::Mouse(button)) = e.press_args() {
                 match button {
                     MouseButton::Left => self.handle_mouse_action(mouse_screen_position),
                     MouseButton::Right => {
+                        is_drawing_locked = true;
                         self.grid
                             .on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
+                    }
+                    _ => (),
+                }
+            }
+
+            if let Some(Button::Mouse(button)) = e.release_args() {
+                match button {
+                    MouseButton::Right => {
+                        is_drawing_locked = false;
                     }
                     _ => (),
                 }
