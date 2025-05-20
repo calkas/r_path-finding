@@ -17,6 +17,9 @@ pub struct Dijkstra {
 
 impl Measurable for Dijkstra {
     fn output_statistics(&self) -> String {
+        if self.path_finder.get_path().is_empty() {
+            return format!("Goal is unreachable !");
+        }
         format!(
             "Dijkstra Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec\n",
             self.path_finder.get_path().len(),
@@ -87,6 +90,11 @@ impl Algorithm for Dijkstra {
                     self.priority_titles.push(neighbor, priority);
                     self.path_finder.add_to_path(neighbor, Some(current));
                 }
+            }
+            // Check if goal is unreachable
+            if self.priority_titles.is_empty() {
+                self.sim_coordinator.has_completed = true;
+                return;
             }
         } else {
             self.sim_coordinator.is_processing = false;

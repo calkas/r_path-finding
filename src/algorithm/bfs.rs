@@ -16,6 +16,9 @@ pub struct Bfs {
 
 impl Measurable for Bfs {
     fn output_statistics(&self) -> String {
+        if self.path_finder.get_path().is_empty() {
+            return format!("Goal is unreachable !");
+        }
         format!(
             "BFS Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
             self.path_finder.get_path().len(),
@@ -77,6 +80,11 @@ impl Algorithm for Bfs {
                     self.path_finder.add_to_path(neighbor_title, Some(current));
                     self.title_processing_queue.push_back(neighbor_title);
                 }
+            }
+            // Check if goal is unreachable
+            if self.title_processing_queue.is_empty() {
+                self.sim_coordinator.has_completed = true;
+                return;
             }
         } else {
             self.sim_coordinator.is_processing = false;
