@@ -45,6 +45,7 @@ impl Algorithm for Dijkstra {
         self.priority_titles.push(start, 0);
         self.cost_so_far.insert(start, 0);
         self.path_finder.add_to_path(start, None);
+        self.sim_coordinator.start_processing();
 
         Ok(())
     }
@@ -68,6 +69,7 @@ impl Algorithm for Dijkstra {
                 self.sim_coordinator.has_completed = true;
                 self.path_finder.reconstruct_path(start, goal);
 
+                self.sim_coordinator.stop_processing();
                 for element in self.path_finder.get_path().iter() {
                     grid.set_trace_back_path(*element);
                 }
@@ -97,7 +99,7 @@ impl Algorithm for Dijkstra {
                 return;
             }
         } else {
-            self.sim_coordinator.is_processing = false;
+            self.sim_coordinator.stop_processing();
         }
     }
 

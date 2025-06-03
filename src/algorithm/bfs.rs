@@ -44,7 +44,7 @@ impl Algorithm for Bfs {
         self.title_processing_queue.push_back(start);
         self.visited_titles.push(start);
         self.path_finder.add_to_path(start, None);
-        self.sim_coordinator.is_processing = true;
+        self.sim_coordinator.start_processing();
         Ok(())
     }
 
@@ -62,6 +62,7 @@ impl Algorithm for Bfs {
             // Early exit
             if self.sim_coordinator.is_goal_reached(current, goal) {
                 self.sim_coordinator.has_completed = true;
+                self.sim_coordinator.stop_processing();
                 self.path_finder.reconstruct_path(start, goal);
 
                 for element in self.path_finder.get_path().iter() {
@@ -87,7 +88,7 @@ impl Algorithm for Bfs {
                 return;
             }
         } else {
-            self.sim_coordinator.is_processing = false;
+            self.sim_coordinator.stop_processing();
         }
     }
 
@@ -107,7 +108,7 @@ impl Algorithm for Bfs {
     /// # name
     /// Algorithm name
     fn name(&self) -> String {
-        "BFS".to_string()
+        "Breadth First Search ".to_string()
     }
 }
 

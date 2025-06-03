@@ -2,8 +2,9 @@ use crate::map::{grid::Grid, TitleCoords};
 use std::collections::HashMap;
 pub mod bfs;
 pub mod dijkstra;
+pub mod greedy_bfs;
 
-const ONE_ITERATION_TIME_SEC: f64 = 0.1;
+const ONE_ITERATION_TIME_SEC: f64 = 0.01;
 
 #[derive(Debug)]
 pub enum AlgorithmError {
@@ -42,13 +43,21 @@ impl Default for SimulationCoordinator {
 
 impl SimulationCoordinator {
     pub fn is_ready_to_execute(&mut self, delta_time: f64) -> bool {
-        if self.is_processing || self.should_iterate(delta_time) {
+        if self.is_processing && self.should_iterate(delta_time) {
             return true;
         }
         false
     }
     pub fn increase_step_count(&mut self) {
         self.steps += 1;
+    }
+
+    pub fn start_processing(&mut self) {
+        self.is_processing = true;
+    }
+
+    pub fn stop_processing(&mut self) {
+        self.is_processing = false;
     }
 
     pub fn is_goal_reached(&mut self, current_title: TitleCoords, goal_title: TitleCoords) -> bool {
@@ -106,13 +115,13 @@ mod unit_test {
         let mut sim = SimulationCoordinator::default();
 
         // Ready for execution test case
-        let mut delta_time = 0.001;
-        assert!(!sim.is_ready_to_execute(delta_time));
-        assert_eq!(sim.accumulated_time, delta_time);
+        let delta_time = ONE_ITERATION_TIME_SEC;
 
-        delta_time += ONE_ITERATION_TIME_SEC;
+        sim.stop_processing();
+        assert!(!sim.is_ready_to_execute(delta_time));
+
+        sim.start_processing();
         assert!(sim.is_ready_to_execute(delta_time));
-        assert_eq!(sim.accumulated_time, 0.0);
 
         // Goal Reached test case
         let start = TitleCoords { x: 0, y: 0 };

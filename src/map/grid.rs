@@ -101,6 +101,14 @@ impl Grid {
         1
     }
 
+    /// # heuristic
+    /// Manhattan distance on a square grid
+    pub fn heuristic(&self, current: TitleCoords, next: TitleCoords) -> i32 {
+        let x_distance = (next.x as i32) - (current.x as i32);
+        let y_distance = (next.y as i32) - (current.y as i32);
+        x_distance.abs() + y_distance.abs()
+    }
+
     /// # is_within_bounds
     /// Check if coordinate of title is in the grid
     pub fn is_within_bounds(&self, title_coords: TitleCoords) -> bool {
@@ -128,7 +136,9 @@ impl Grid {
     /// # set_trace_back_path
     /// Set title to be a title path
     pub fn set_trace_back_path(&mut self, title_coords: TitleCoords) {
-        if self.is_within_bounds(title_coords) && self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: true }) {
+        if self.is_within_bounds(title_coords)
+            && self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: true })
+        {
             self.titles[title_coords.x][title_coords.y] = Title::Path;
         }
     }
