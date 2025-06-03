@@ -176,11 +176,16 @@ impl App<'_> {
         match self.mouse_action_fsm {
             fsm::MouseActionState::SetStartPoint => {
                 self.grid.on_mouse_clicked(&mouse_pos, Title::Start);
-                self.mouse_action_fsm = self.mouse_action_fsm.next();
+                if self.grid.start_title.is_some() {
+                    self.mouse_action_fsm = self.mouse_action_fsm.next();
+                }
             }
+
             fsm::MouseActionState::SetEndPoint => {
                 self.grid.on_mouse_clicked(&mouse_pos, Title::End);
-                self.mouse_action_fsm = self.mouse_action_fsm.next();
+                if self.grid.goal_title.is_some() {
+                    self.mouse_action_fsm = self.mouse_action_fsm.next();
+                }
             }
             fsm::MouseActionState::StartSimulation => {
                 let s = self.path_finding_algorithm.start(&mut self.grid);

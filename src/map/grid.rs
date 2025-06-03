@@ -62,12 +62,14 @@ impl Grid {
             let x = ((mouse_positon[0] - self.offset.0 as f64) / self.title_size as f64) as usize;
             let y = ((mouse_positon[1] - self.offset.1 as f64) / self.title_size as f64) as usize;
 
-            match title {
-                Title::Start => self.start_title = Some(TitleCoords { x, y }),
-                Title::End => self.goal_title = Some(TitleCoords { x, y }),
-                _ => {}
+            if self.is_not_set(TitleCoords { x, y }) {
+                match title {
+                    Title::Start => self.start_title = Some(TitleCoords { x, y }),
+                    Title::End => self.goal_title = Some(TitleCoords { x, y }),
+                    _ => {}
+                }
+                self.titles[x][y] = title;
             }
-            self.titles[x][y] = title;
         }
     }
 
@@ -201,6 +203,12 @@ impl Grid {
         if self.titles[title_coords.x][title_coords.y] == Title::Start
             || self.titles[title_coords.x][title_coords.y] == Title::End
         {
+            return true;
+        }
+        false
+    }
+    fn is_not_set(&self, title_coords: TitleCoords) -> bool {
+        if self.titles[title_coords.x][title_coords.y] == (Title::Normal { was_visited: false }) {
             return true;
         }
         false
