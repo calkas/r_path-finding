@@ -28,6 +28,10 @@ impl Measurable for AStar {
 }
 
 impl Algorithm for AStar {
+    /// # start
+    /// A* Algorithm starts.
+    ///
+    /// Init the algorithm values
     fn start(&mut self, grid: &mut Grid) -> Result<(), super::AlgorithmError> {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             return Err(AlgorithmError::InvalidInputData);
@@ -42,6 +46,8 @@ impl Algorithm for AStar {
         Ok(())
     }
 
+    /// # execute_step
+    /// Algorithm processing update every ONE_ITERATION_TIME_SEC until reach the goal
     fn execute_step(&mut self, grid: &mut Grid, delta_time: f64) {
         if !self.sim_coordinator.is_ready_to_execute(delta_time) {
             return;
@@ -92,15 +98,21 @@ impl Algorithm for AStar {
         }
     }
 
+    /// # reset
+    /// Reset the algorithm processing
     fn reset(&mut self, grid: &mut Grid) {
         *self = AStar::default();
         grid.reset();
     }
 
+    /// # has_completed
+    /// Check if processing is done
     fn has_completed(&self) -> bool {
         self.sim_coordinator.has_completed
     }
 
+    /// # name
+    /// Algorithm name
     fn name(&self) -> String {
         "A*".to_string()
     }
