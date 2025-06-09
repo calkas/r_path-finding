@@ -1,5 +1,6 @@
 use crate::map::{grid::Grid, TitleCoords};
 use std::collections::HashMap;
+pub mod a_star;
 pub mod bfs;
 pub mod dijkstra;
 pub mod greedy_bfs;

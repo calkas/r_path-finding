@@ -4,38 +4,39 @@ use crate::{
     map::{grid::Grid, TitleCoords},
 };
 use priority_queue::DoublePriorityQueue;
+use std::collections::HashMap;
 
-/// # Greedy Best First Search Algorithm
-/// Explores titles in promising directions but it may not find the shortest path.
+/// # A* Algorithm
+/// Mix of Dijkstra and Greedy Best First Search
 #[derive(Default)]
-pub struct GreedyBfs {
+pub struct AStar {
     priority_titles: DoublePriorityQueue<TitleCoords, i32>,
-    visited_titles: Vec<TitleCoords>,
+    cost_so_far: HashMap<TitleCoords, i32>,
     sim_coordinator: SimulationCoordinator,
     path_finder: Pathfinder,
 }
 
-impl Measurable for GreedyBfs {
+impl Measurable for AStar {
     fn output_statistics(&self) -> String {
         get_statistics(
             self.name().as_str(),
             self.path_finder.get_path().len(),
             self.sim_coordinator.steps,
-            self.visited_titles.len(),
+            self.cost_so_far.len(),
         )
     }
 }
 
-impl Algorithm for GreedyBfs {
-    fn start(&mut self, grid: &mut Grid) -> Result<(), AlgorithmError> {
+impl Algorithm for AStar {
+    fn start(&mut self, grid: &mut Grid) -> Result<(), super::AlgorithmError> {
         if grid.start_title.is_none() || grid.goal_title.is_none() {
             return Err(AlgorithmError::InvalidInputData);
         }
-
         let start = grid.start_title.unwrap();
+
         self.priority_titles.push(start, 0);
+        self.cost_so_far.insert(start, 0);
         self.path_finder.add_to_path(start, None);
-        self.visited_titles.push(start);
         self.sim_coordinator.start_processing();
 
         Ok(())
@@ -48,11 +49,13 @@ impl Algorithm for GreedyBfs {
 
         if let Some(current_title) = self.priority_titles.pop_min() {
             self.sim_coordinator.increase_step_count();
+
+            let start = grid.start_title.unwrap();
+            let goal = grid.goal_title.unwrap();
             let current = current_title.0;
             let _priority = current_title.1;
-            let goal = grid.goal_title.unwrap();
-            let start = grid.start_title.unwrap();
 
+            //Early exit
             if self.sim_coordinator.process_goal_reached(current, goal) {
                 self.path_finder.reconstruct_path(start, goal);
                 for element in self.path_finder.get_path().iter() {
@@ -62,14 +65,20 @@ impl Algorithm for GreedyBfs {
             }
 
             grid.mark_visited(current);
+
             let neighbors = grid.get_neighbors(current);
 
             for neighbor in neighbors {
-                if !self.visited_titles.contains(&neighbor) {
-                    let heuristic_priority = grid.heuristic(neighbor, goal);
-                    self.priority_titles.push(neighbor, heuristic_priority);
-                    self.visited_titles.push(neighbor);
+                let new_cost =
+                    *self.cost_so_far.get(&current).unwrap() + grid.cost(current, neighbor);
+
+                if !self.cost_so_far.contains_key(&neighbor)
+                    || new_cost < *self.cost_so_far.get(&neighbor).unwrap()
+                {
                     grid.mark_process(neighbor);
+                    self.cost_so_far.insert(neighbor, new_cost);
+                    let priority = new_cost + grid.heuristic(current, neighbor);
+                    self.priority_titles.push(neighbor, priority);
                     self.path_finder.add_to_path(neighbor, Some(current));
                 }
             }
@@ -84,7 +93,7 @@ impl Algorithm for GreedyBfs {
     }
 
     fn reset(&mut self, grid: &mut Grid) {
-        *self = GreedyBfs::default();
+        *self = AStar::default();
         grid.reset();
     }
 
@@ -93,6 +102,6 @@ impl Algorithm for GreedyBfs {
     }
 
     fn name(&self) -> String {
-        "Greedy Best First Search".to_string()
+        "A*".to_string()
     }
 }
