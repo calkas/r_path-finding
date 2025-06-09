@@ -5,7 +5,8 @@ use crate::{
 };
 use priority_queue::DoublePriorityQueue;
 
-// # Greedy Best First Search
+/// # Greedy Best First Search
+/// Explores titles in promising directions but it may not find the shortest path.
 #[derive(Default)]
 pub struct GreedyBfs {
     priority_titles: DoublePriorityQueue<TitleCoords, i32>,

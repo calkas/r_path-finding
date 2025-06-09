@@ -6,7 +6,10 @@ use crate::{
 use priority_queue::DoublePriorityQueue;
 use std::collections::HashMap;
 /// # Dijkstra's Algorithm **(Uniform Cost Search)**
-///  Tracks movement costs to reach goal.
+/// Tracks movement costs to reach goal.
+///
+/// Works well to find the shortest path but explores titles in
+/// directions that aren’t promising.
 #[derive(Default)]
 pub struct Dijkstra {
     priority_titles: DoublePriorityQueue<TitleCoords, i32>,

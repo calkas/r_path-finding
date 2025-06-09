@@ -6,6 +6,7 @@ use crate::{
 use std::collections::VecDeque;
 
 /// # Breadth-First Search Algorithm
+/// The algorithm explores titles equally in all directions.
 #[derive(Default)]
 pub struct Bfs {
     title_processing_queue: VecDeque<TitleCoords>,
