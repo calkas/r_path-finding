@@ -76,7 +76,7 @@ impl Grid {
     /// # get_neighbors
     /// Get title neighbors for current title
     pub fn get_neighbors(&mut self, current_coord: TitleCoords) -> Vec<TitleCoords> {
-        let neighbors = POSSIBLE_DIRECTIONS
+        POSSIBLE_DIRECTIONS
             .into_iter()
             .filter_map(|step_direction| {
                 let coord_x = current_coord.x.checked_add_signed(step_direction.0)?;
@@ -94,8 +94,7 @@ impl Grid {
                 }
                 Some(neighbor_coordinates)
             })
-            .collect();
-        neighbors
+            .collect()
     }
     /// # cost
     /// The movement cost - Is 1 for normal grid
@@ -224,7 +223,7 @@ mod unit_test {
         let mut grid = Grid::new(0, 0, 50, 50, 10);
         let number_of_titles: usize = grid.titles.iter().map(|row| row.len()).sum();
 
-        assert_eq!(25 as usize, number_of_titles);
+        assert_eq!(25_usize, number_of_titles);
 
         grid.on_mouse_clicked(&[15.0, 15.3], Title::Start);
         grid.on_mouse_clicked(&[21.4, 36.3], Title::End);

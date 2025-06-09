@@ -109,11 +109,8 @@ impl App<'_> {
             }
 
             if let Some(Button::Mouse(button)) = e.release_args() {
-                match button {
-                    MouseButton::Right => {
-                        is_drawing_locked = false;
-                    }
-                    _ => (),
+                if button == MouseButton::Right {
+                    is_drawing_locked = false;
                 }
             }
 

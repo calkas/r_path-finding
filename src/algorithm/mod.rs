@@ -60,12 +60,13 @@ impl SimulationCoordinator {
         self.is_processing = false;
     }
 
-    pub fn is_goal_reached(&mut self, current_title: TitleCoords, goal_title: TitleCoords) -> bool {
-        if current_title != goal_title {
-            return false;
+    pub fn process_goal_reached(&mut self, current: TitleCoords, goal: TitleCoords) -> bool {
+        if current == goal {
+            self.has_completed = true;
+            self.stop_processing();
+            return true;
         }
-        self.is_processing = false;
-        true
+        false
     }
 
     fn should_iterate(&mut self, delta_time: f64) -> bool {
@@ -76,6 +77,27 @@ impl SimulationCoordinator {
         self.accumulated_time = 0.0;
         true
     }
+}
+
+fn get_statistics(
+    algorithm_name: &str,
+    path_length: usize,
+    steps: u32,
+    num_visited_titles: usize,
+) -> String {
+    if path_length == 0 {
+        return "Goal is unreachable !".to_string();
+    }
+
+    format!(
+            " {}\n\n Statistics:\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
+            algorithm_name,
+            path_length,
+            steps,
+            num_visited_titles,
+            ONE_ITERATION_TIME_SEC,
+            steps as f64 * ONE_ITERATION_TIME_SEC
+        )
 }
 
 #[derive(Default)]
@@ -126,10 +148,10 @@ mod unit_test {
         // Goal Reached test case
         let start = TitleCoords { x: 0, y: 0 };
         let mut goal = TitleCoords { x: 0, y: 1 };
-        assert!(!sim.is_goal_reached(start, goal));
+        assert!(!sim.process_goal_reached(start, goal));
 
         goal = start;
-        assert!(sim.is_goal_reached(start, goal));
+        assert!(sim.process_goal_reached(start, goal));
 
         // Increase step case
         sim.increase_step_count();

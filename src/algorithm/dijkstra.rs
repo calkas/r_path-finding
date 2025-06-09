@@ -1,8 +1,8 @@
-use super::{
-    Algorithm, AlgorithmError, Measurable, Pathfinder, SimulationCoordinator,
-    ONE_ITERATION_TIME_SEC,
+use super::{Algorithm, AlgorithmError, Measurable, Pathfinder, SimulationCoordinator};
+use crate::{
+    algorithm::get_statistics,
+    map::{grid::Grid, TitleCoords},
 };
-use crate::map::{grid::Grid, TitleCoords};
 use priority_queue::DoublePriorityQueue;
 use std::collections::HashMap;
 /// # Dijkstra's Algorithm **(Uniform Cost Search)**
@@ -17,16 +17,11 @@ pub struct Dijkstra {
 
 impl Measurable for Dijkstra {
     fn output_statistics(&self) -> String {
-        if self.path_finder.get_path().is_empty() {
-            return format!("Goal is unreachable !");
-        }
-        format!(
-            "Dijkstra Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec\n",
+        get_statistics(
+            self.name().as_str(),
             self.path_finder.get_path().len(),
             self.sim_coordinator.steps,
             self.cost_so_far.len(),
-            ONE_ITERATION_TIME_SEC,
-            self.sim_coordinator.steps as f64 * ONE_ITERATION_TIME_SEC,
         )
     }
 }
@@ -65,18 +60,14 @@ impl Algorithm for Dijkstra {
             let _priority = current_title.1;
 
             // Early exit
-            if self.sim_coordinator.is_goal_reached(current, goal) {
-                self.sim_coordinator.has_completed = true;
+            if self.sim_coordinator.process_goal_reached(current, goal) {
                 self.path_finder.reconstruct_path(start, goal);
-
-                self.sim_coordinator.stop_processing();
                 for element in self.path_finder.get_path().iter() {
                     grid.set_trace_back_path(*element);
                 }
                 return;
             }
             grid.mark_visited(current);
-
             let neighbors = grid.get_neighbors(current);
 
             for neighbor in neighbors {
@@ -96,7 +87,7 @@ impl Algorithm for Dijkstra {
             // Check if goal is unreachable
             if self.priority_titles.is_empty() {
                 self.sim_coordinator.has_completed = true;
-                return;
+                self.sim_coordinator.stop_processing();
             }
         } else {
             self.sim_coordinator.stop_processing();
@@ -126,6 +117,7 @@ impl Algorithm for Dijkstra {
 #[cfg(test)]
 mod unit_test {
     use super::*;
+    use crate::algorithm::ONE_ITERATION_TIME_SEC;
     #[test]
     fn dijkstra_start() {
         let mut dijkstra = Dijkstra::default();

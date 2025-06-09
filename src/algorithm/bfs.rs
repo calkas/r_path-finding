@@ -1,8 +1,8 @@
-use super::{
-    Algorithm, AlgorithmError, Measurable, Pathfinder, SimulationCoordinator,
-    ONE_ITERATION_TIME_SEC,
+use super::{Algorithm, AlgorithmError, Measurable, Pathfinder, SimulationCoordinator};
+use crate::{
+    algorithm::get_statistics,
+    map::{grid::Grid, TitleCoords},
 };
-use crate::map::{grid::Grid, TitleCoords};
 use std::collections::VecDeque;
 
 /// # Breadth-First Search Algorithm
@@ -16,16 +16,11 @@ pub struct Bfs {
 
 impl Measurable for Bfs {
     fn output_statistics(&self) -> String {
-        if self.path_finder.get_path().is_empty() {
-            return format!("Goal is unreachable !");
-        }
-        format!(
-            "BFS Statistics:\n\n - Path length: {}\n - Steps taken: {}\n - Visited nodes: {}\n - Time per iteration: {:.2} sec\n - Total time: {:.2} sec",
+        get_statistics(
+            self.name().as_str(),
             self.path_finder.get_path().len(),
             self.sim_coordinator.steps,
             self.visited_titles.len(),
-            ONE_ITERATION_TIME_SEC,
-            self.sim_coordinator.steps as f64 * ONE_ITERATION_TIME_SEC
         )
     }
 }
@@ -59,18 +54,13 @@ impl Algorithm for Bfs {
             let goal = grid.goal_title.unwrap();
             let start = grid.start_title.unwrap();
 
-            // Early exit
-            if self.sim_coordinator.is_goal_reached(current, goal) {
-                self.sim_coordinator.has_completed = true;
-                self.sim_coordinator.stop_processing();
+            if self.sim_coordinator.process_goal_reached(current, goal) {
                 self.path_finder.reconstruct_path(start, goal);
-
                 for element in self.path_finder.get_path().iter() {
                     grid.set_trace_back_path(*element);
                 }
                 return;
             }
-
             grid.mark_visited(current);
             let neighboring_titles = grid.get_neighbors(current);
 
@@ -85,7 +75,7 @@ impl Algorithm for Bfs {
             // Check if goal is unreachable
             if self.title_processing_queue.is_empty() {
                 self.sim_coordinator.has_completed = true;
-                return;
+                self.sim_coordinator.stop_processing();
             }
         } else {
             self.sim_coordinator.stop_processing();
@@ -108,7 +98,7 @@ impl Algorithm for Bfs {
     /// # name
     /// Algorithm name
     fn name(&self) -> String {
-        "Breadth First Search ".to_string()
+        "Breadth First Search".to_string()
     }
 }
 
@@ -116,6 +106,7 @@ impl Algorithm for Bfs {
 mod unit_test {
 
     use super::*;
+    use crate::algorithm::ONE_ITERATION_TIME_SEC;
     #[test]
     fn bfs_start() {
         let mut bfs = Bfs::default();
@@ -169,13 +160,14 @@ mod unit_test {
         ];
 
         assert_eq!(bfs.visited_titles.len(), 5);
-        for id in 0..bfs.visited_titles.len() {
-            assert_eq!(expected_visited_tiles[id], bfs.visited_titles[id]);
+        for (id, item) in expected_visited_tiles.iter().enumerate() {
+            assert_eq!(*item, bfs.visited_titles[id]);
         }
 
         assert_eq!(bfs.title_processing_queue.len(), 4);
-        for id in 0..bfs.title_processing_queue.len() {
-            assert_eq!(exp_neighbors[id], bfs.title_processing_queue[id]);
+
+        for (id, item) in exp_neighbors.iter().enumerate() {
+            assert_eq!(*item, bfs.title_processing_queue[id]);
         }
 
         assert!(!bfs.has_completed());
