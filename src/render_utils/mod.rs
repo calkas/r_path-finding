@@ -6,6 +6,7 @@ pub mod color {
     pub const GREEN: [f32; 4] = [0.0, 255.0, 0.0, 1.0];
     pub const RED: [f32; 4] = [255.0, 0.0, 0.0, 1.0];
     pub const WHITE: [f32; 4] = [255.0, 255.0, 255.0, 1.0];
+    pub const BACKGROUND: [f32; 4] = [0.5, 0.5, 0.5, 1.0];
 }
 
 pub fn draw_text(

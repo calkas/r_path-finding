@@ -1,15 +1,12 @@
 extern crate r_path_finder;
-
-use r_path_finder::algorithm::{greedy_bfs::GreedyBfs, Algorithm};
 use r_path_finder::App;
 
 fn main() {
     println!("====== Example ======");
     println!("..::Greedy BFS:...");
-    let greedy_bfs: Box<dyn Algorithm> = Box::new(GreedyBfs::default());
-
-    let mut app = App::new(greedy_bfs);
-
-    app.run();
+    let mut app = App::default();
+    if app.skip_menu_and_run_algorithm(2).is_ok() {
+        app.run();
+    }
     println!("======== DONE =======");
 }

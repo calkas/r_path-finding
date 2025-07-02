@@ -10,6 +10,7 @@ const ONE_ITERATION_TIME_SEC: f64 = 0.01;
 #[derive(Debug)]
 pub enum AlgorithmError {
     InvalidInputData,
+    AlgorithmDoesNotExist,
 }
 
 pub trait Measurable {

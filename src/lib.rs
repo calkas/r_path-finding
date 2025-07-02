@@ -2,11 +2,13 @@ pub mod algorithm;
 mod map;
 mod render_utils;
 
-use algorithm::{Algorithm, AlgorithmError};
+use algorithm::{
+    a_star::AStar, bfs::Bfs, dijkstra::Dijkstra, greedy_bfs::GreedyBfs, Algorithm, AlgorithmError,
+};
+
 use map::grid::Grid;
 use map::Title;
 use piston_window::*;
-
 mod fsm {
     #[derive(Clone, Copy, PartialEq, Debug)]
     pub enum MouseActionState {
@@ -32,54 +34,116 @@ mod fsm {
             Self::SetStartPoint
         }
     }
+
+    #[derive(Clone, Copy, PartialEq, Debug)]
+    pub enum MenuSelectionState {
+        Bfs = 0,
+        Dijkstra = 1,
+        GreedyBfs = 2,
+        AStar = 3,
+    }
+
+    impl MenuSelectionState {
+        pub fn new() -> Self {
+            Self::Bfs
+        }
+
+        pub fn next(self) -> Self {
+            match self {
+                Self::Bfs => Self::Dijkstra,
+                Self::Dijkstra => Self::GreedyBfs,
+                Self::GreedyBfs => Self::AStar,
+                Self::AStar => Self::Bfs,
+            }
+        }
+
+        pub fn prev(self) -> Self {
+            match self {
+                Self::Bfs => Self::AStar,
+                Self::AStar => Self::GreedyBfs,
+                Self::GreedyBfs => Self::Dijkstra,
+                Self::Dijkstra => Self::Bfs,
+            }
+        }
+
+        pub fn selected_algorithm_id(&self) -> usize {
+            *self as usize
+        }
+
+        pub fn from_index(self, id: isize) -> Option<Self> {
+            match id {
+                0 => Some(Self::Bfs),
+                1 => Some(Self::Dijkstra),
+                2 => Some(Self::GreedyBfs),
+                3 => Some(Self::AStar),
+                _ => None,
+            }
+        }
+
+        pub fn reset(self) -> Self {
+            Self::Bfs
+        }
+    }
 }
 
-pub mod application_message {
-    pub const WELCOME: &str = "..::R-PATH-FINDER::..\n\n - 1-click left mouse button sets start\n\n - 2-click left mouse button sets goal\n\n - right mouse button sets obstacle\n\n - 3-click left mouse button starts\n  the simulation\n\n - Esc - restart simulation";
-    pub const SIMULATION_STARTS: &str = "Simulation Starts...";
-    pub const DONE: &str = "Done";
+mod application {
+    pub mod message {
+        pub const WELCOME: &str = "..::R-PATH-FINDER::..\n\n - 1-click left mouse button sets start\n\n - 2-click left mouse button sets goal\n\n - right mouse button sets obstacle\n\n - 3-click left mouse button starts\n  the simulation\n\n - Esc - restart simulation";
+        pub const SIMULATION_STARTS: &str = "Simulation Starts...";
+        pub const APP_TITLE: &str = "R-PathFinder - Menu";
+        pub const DONE: &str = "Done";
+        pub const ALGORITHM_MENU_ITEMS: [&str; 4] = ["Bfs", "Dijkstra", "Greedy Bfs", "A*"];
+    }
+    #[derive(Debug, PartialEq)]
+    pub enum Scene {
+        Menu,
+        Algorithm,
+    }
 }
 
 pub struct App<'a> {
     window: PistonWindow,
+    algorithms: [Box<dyn Algorithm>; 4],
     grid: Grid,
-    path_finding_algorithm: Box<dyn Algorithm>,
     mouse_action_fsm: fsm::MouseActionState,
+    menu_fsm: fsm::MenuSelectionState,
+    scene: application::Scene,
     output_log: &'a str,
 }
 
-impl App<'_> {
-    /// # new
+impl Default for App<'_> {
+    /// # default
     /// Create a new instance of application.
     ///
-    /// The application uses the strategy pattern to set a specific algorithm for pathfinding.
-    ///
-    /// ## Example:
-    /// ```
-    /// use r_path_finder::algorithm::{bfs::Bfs, Algorithm};
-    /// use r_path_finder::App;
-    ///
-    /// let bfs: Box<dyn Algorithm> = Box::new(Bfs::default());
-    ///
-    /// ```
-    pub fn new(algorithm: Box<dyn Algorithm>) -> Self {
-        let title_window = "R-PathFinder - ".to_string() + &algorithm.name();
-
-        let window: PistonWindow = WindowSettings::new(title_window, [700.0, 480.0])
-            .build()
-            .unwrap();
+    /// The application creates all path-finding algorithms.
+    fn default() -> Self {
+        let window: PistonWindow =
+            WindowSettings::new(application::message::APP_TITLE.to_string(), [700.0, 480.0])
+                .build()
+                .unwrap();
 
         let grid = Grid::new(0, 0, 400, 400, 20);
 
+        let algorithms: [Box<dyn Algorithm>; application::message::ALGORITHM_MENU_ITEMS.len()] = [
+            Box::new(Bfs::default()),
+            Box::new(Dijkstra::default()),
+            Box::new(GreedyBfs::default()),
+            Box::new(AStar::default()),
+        ];
+
         Self {
             window,
+            algorithms,
             grid,
-            path_finding_algorithm: algorithm,
             mouse_action_fsm: fsm::MouseActionState::new(),
-            output_log: application_message::WELCOME,
+            menu_fsm: fsm::MenuSelectionState::new(),
+            scene: application::Scene::Menu,
+            output_log: application::message::WELCOME,
         }
     }
+}
 
+impl App<'_> {
     /// # run
     /// Run application/simulation
     pub fn run(&mut self) {
@@ -88,68 +152,141 @@ impl App<'_> {
         let mut is_drawing_locked = false;
 
         while let Some(e) = self.window.next() {
-            if let Some(pos) = e.mouse_cursor_args() {
-                mouse_screen_position = pos;
-                if is_drawing_locked {
-                    self.grid
-                        .on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
-                }
+            match self.scene {
+                application::Scene::Menu => self.menu_scene_input_handling(&e),
+                application::Scene::Algorithm => self.algorithm_scene_input_handling(
+                    &mut mouse_screen_position,
+                    &mut is_drawing_locked,
+                    &e,
+                ),
             }
-
-            if let Some(Button::Mouse(button)) = e.press_args() {
-                match button {
-                    MouseButton::Left => self.handle_mouse_action(mouse_screen_position),
-                    MouseButton::Right => {
-                        is_drawing_locked = true;
-                        self.grid
-                            .on_mouse_clicked(&mouse_screen_position, Title::Obstacle);
-                    }
-                    _ => (),
-                }
-            }
-
-            if let Some(Button::Mouse(button)) = e.release_args() {
-                if button == MouseButton::Right {
-                    is_drawing_locked = false;
-                }
-            }
-
-            if let Some(Button::Keyboard(Key::Escape)) = e.press_args() {
-                self.reset_simulation();
-            }
-
             e.update(|args: &UpdateArgs| {
                 self.update_simulation_state(args);
             });
 
             self.window.draw_2d(&e, |c, g, device| {
-                clear([0.5, 0.5, 0.5, 1.0], g);
+                clear(render_utils::color::BACKGROUND, g);
 
-                render_utils::draw_text(
-                    self.output_log,
-                    [410.0, 50.0],
-                    16,
-                    render_utils::color::BLACK,
-                    &mut glyph,
-                    &c,
-                    g,
-                );
+                if self.scene == application::Scene::Menu {
+                    for (algorithm_id, menu_item) in application::message::ALGORITHM_MENU_ITEMS
+                        .iter()
+                        .enumerate()
+                    {
+                        let mut size = 32;
 
-                if self.path_finding_algorithm.has_completed() {
+                        if algorithm_id == self.menu_fsm.selected_algorithm_id() {
+                            size = 48;
+                        }
+
+                        render_utils::draw_text(
+                            menu_item,
+                            [270.0, 150.0 + 50.0 * (algorithm_id as f64)],
+                            size,
+                            render_utils::color::BLACK,
+                            &mut glyph,
+                            &c,
+                            g,
+                        );
+                    }
+                } else {
                     render_utils::draw_text(
-                        &self.path_finding_algorithm.output_statistics(),
-                        [410.0, 100.0],
+                        self.output_log,
+                        [410.0, 50.0],
                         16,
                         render_utils::color::BLACK,
                         &mut glyph,
                         &c,
                         g,
                     );
+
+                    if self.algorithms[self.menu_fsm.selected_algorithm_id()].has_completed() {
+                        render_utils::draw_text(
+                            &self.algorithms[self.menu_fsm.selected_algorithm_id()]
+                                .output_statistics(),
+                            [410.0, 100.0],
+                            16,
+                            render_utils::color::BLACK,
+                            &mut glyph,
+                            &c,
+                            g,
+                        );
+                    }
+
+                    self.grid.render(&c, g);
                 }
 
-                self.grid.render(&c, g);
                 glyph.factory.encoder.flush(device);
             });
+        }
+    }
+
+    /// # skip_menu_and_run_algorithm
+    /// Skip menu and just run current algorithm
+    pub fn skip_menu_and_run_algorithm(&mut self, id: isize) -> Result<(), AlgorithmError> {
+        let alg = self.menu_fsm.from_index(id);
+        if alg.is_none() {
+            return Err(AlgorithmError::AlgorithmDoesNotExist);
+        }
+        self.window
+            .set_title(application::message::ALGORITHM_MENU_ITEMS[id as usize].to_string());
+        self.menu_fsm = alg.unwrap();
+        self.scene = application::Scene::Algorithm;
+
+        Ok(())
+    }
+
+    fn menu_scene_input_handling(&mut self, e: &Event) {
+        if let Some(Button::Keyboard(Key::Up)) = e.press_args() {
+            self.menu_fsm = self.menu_fsm.prev();
+        }
+
+        if let Some(Button::Keyboard(Key::Down)) = e.press_args() {
+            self.menu_fsm = self.menu_fsm.next();
+        }
+
+        if let Some(Button::Keyboard(Key::Return)) = e.press_args() {
+            self.scene = application::Scene::Algorithm;
+            self.window.set_title(
+                application::message::ALGORITHM_MENU_ITEMS[self.menu_fsm.selected_algorithm_id()]
+                    .to_string(),
+            );
+        }
+    }
+
+    fn algorithm_scene_input_handling(
+        &mut self,
+        mouse_screen_position: &mut [f64; 2],
+        is_drawing_locked: &mut bool,
+        e: &Event,
+    ) {
+        if let Some(pos) = e.mouse_cursor_args() {
+            *mouse_screen_position = pos;
+            if *is_drawing_locked {
+                self.grid
+                    .on_mouse_clicked(mouse_screen_position, Title::Obstacle);
+            }
+        }
+
+        if let Some(Button::Mouse(button)) = e.press_args() {
+            match button {
+                MouseButton::Left => self.handle_mouse_action(*mouse_screen_position),
+                MouseButton::Right => {
+                    *is_drawing_locked = true;
+                    self.grid
+                        .on_mouse_clicked(mouse_screen_position, Title::Obstacle);
+                }
+                _ => (),
+            }
+        }
+
+        if let Some(Button::Mouse(button)) = e.release_args() {
+            if button == MouseButton::Right {
+                *is_drawing_locked = false;
+            }
+        }
+
+        if let Some(Button::Keyboard(Key::Escape)) = e.press_args() {
+            self.reset_simulation();
         }
     }
 
@@ -161,11 +298,11 @@ impl App<'_> {
     }
 
     fn update_simulation_state(&mut self, args: &UpdateArgs) {
-        if self.path_finding_algorithm.has_completed() {
-            self.output_log = application_message::DONE;
+        if self.algorithms[self.menu_fsm.selected_algorithm_id()].has_completed() {
+            self.output_log = application::message::DONE;
             return;
         }
-        self.path_finding_algorithm
+        self.algorithms[self.menu_fsm.selected_algorithm_id()]
             .execute_step(&mut self.grid, args.dt);
     }
 
@@ -185,7 +322,8 @@ impl App<'_> {
                 }
             }
             fsm::MouseActionState::StartSimulation => {
-                let s = self.path_finding_algorithm.start(&mut self.grid);
+                let s =
+                    self.algorithms[self.menu_fsm.selected_algorithm_id()].start(&mut self.grid);
                 self.handle_algorithm_error(s);
                 self.mouse_action_fsm = self.mouse_action_fsm.next();
             }
@@ -194,9 +332,14 @@ impl App<'_> {
     }
 
     fn reset_simulation(&mut self) {
-        self.output_log = application_message::WELCOME;
+        self.output_log = application::message::WELCOME;
         self.mouse_action_fsm = self.mouse_action_fsm.reset();
-        self.path_finding_algorithm.reset(&mut self.grid);
+        self.algorithms[self.menu_fsm.selected_algorithm_id()].reset(&mut self.grid);
+
+        self.menu_fsm = self.menu_fsm.reset();
+        self.scene = application::Scene::Menu;
+        self.window
+            .set_title(application::message::APP_TITLE.to_string());
     }
 
     fn handle_algorithm_error(&mut self, status: Result<(), AlgorithmError>) {
@@ -204,8 +347,9 @@ impl App<'_> {
             Err(AlgorithmError::InvalidInputData) => {
                 println!("User did not set the start or end point")
             }
+            Err(_) => todo!(),
             Ok(_) => {
-                self.output_log = application_message::SIMULATION_STARTS;
+                self.output_log = application::message::SIMULATION_STARTS;
             }
         }
     }
